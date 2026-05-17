@@ -1,0 +1,9 @@
+{
+  "name": "firelaw-api-webapp",
+  "version": "1.0.0",
+  "description": "FireLaw AI webapp with Netlify Functions and OpenAI Responses API",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "dependencies": {}
+}
