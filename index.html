@@ -1,627 +1,223 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FireLaw AI API WebApp</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#152640" />
+  <title>구리시 공동주택 소방시설 지도 - 초안</title>
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.7.1/dist/maplibre-gl.css" />
   <style>
     :root {
-      --bg: #f5f7fb;
-      --card: #ffffff;
-      --primary: #d71920;
-      --primary-dark: #9f1239;
-      --text: #111827;
-      --muted: #6b7280;
-      --line: #e5e7eb;
-      --soft: #fff1f2;
-      --blue: #eef6ff;
-      --green: #ecfdf5;
-      --shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+      --navy:#152640; --navy-2:#203a60; --paper:#f4f7fb; --white:#fff;
+      --text:#172033; --muted:#627086; --line:#dce3ec; --receiver:#1677d2; --receiver-marker:#1677d2;
+      --siamese:#e33b42; --shadow:0 12px 34px rgba(19,38,66,.17);
     }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .app {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 14px;
-    }
-
-    .header {
-      background: linear-gradient(135deg, #d71920, #7f1d1d);
-      color: #fff;
-      border-radius: 22px;
-      padding: 22px;
-      box-shadow: var(--shadow);
-      margin-bottom: 14px;
-    }
-
-    .header h1 {
-      margin: 0 0 6px;
-      font-size: 26px;
-      letter-spacing: -0.04em;
-    }
-
-    .header p {
-      margin: 0;
-      font-size: 14px;
-      opacity: 0.92;
-      line-height: 1.5;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow: var(--shadow);
-    }
-
-    .title-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    h2 {
-      font-size: 18px;
-      margin: 0;
-      letter-spacing: -0.03em;
-    }
-
-    .badge {
-      padding: 5px 10px;
-      border-radius: 999px;
-      background: var(--soft);
-      color: var(--primary-dark);
-      font-size: 12px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    textarea, select {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 13px 14px;
-      font-size: 15px;
-      line-height: 1.5;
-      outline: none;
-      resize: vertical;
-      background: #fff;
-      color: var(--text);
-    }
-
-    textarea:focus, select:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(215, 25, 32, 0.12);
-    }
-
-    textarea {
-      min-height: 100px;
-    }
-
-    label {
-      display: block;
-      margin: 10px 0 6px;
-      font-weight: 800;
-      font-size: 14px;
-    }
-
-    .row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-
-    .btns {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    button {
-      border: 0;
-      border-radius: 16px;
-      padding: 13px 12px;
-      font-weight: 900;
-      font-size: 15px;
-      cursor: pointer;
-      transition: transform 0.08s ease, opacity 0.12s ease;
-    }
-
-    button:active { transform: scale(0.98); }
-    button:disabled { cursor: not-allowed; opacity: 0.62; }
-
-    .primary { background: var(--primary); color: #fff; }
-    .dark { background: #111827; color: #fff; }
-    .soft { background: var(--blue); color: #174ea6; }
-    .green { background: var(--green); color: #166534; }
-    .gray { background: #f3f4f6; color: #374151; }
-
-    .summary {
-      display: grid;
-      gap: 8px;
-      background: #fafafa;
-      border: 1px dashed #d1d5db;
-      border-radius: 18px;
-      padding: 14px;
-      font-size: 14px;
-    }
-
-    .summary div {
-      display: grid;
-      grid-template-columns: 92px 1fr;
-      gap: 8px;
-    }
-
-    .summary b { color: var(--muted); }
-
-    .chat {
-      height: 440px;
-      overflow-y: auto;
-      background: #f9fafb;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 12px;
-    }
-
-    .msg {
-      max-width: 92%;
-      margin-bottom: 10px;
-      padding: 12px 14px;
-      border-radius: 18px;
-      font-size: 14px;
-      line-height: 1.65;
-      white-space: pre-wrap;
-      word-break: keep-all;
-    }
-
-    .user {
-      margin-left: auto;
-      background: var(--primary);
-      color: #fff;
-      border-bottom-right-radius: 6px;
-    }
-
-    .ai {
-      margin-right: auto;
-      background: #fff;
-      border: 1px solid var(--line);
-      border-bottom-left-radius: 6px;
-    }
-
-    .status {
-      font-size: 13px;
-      color: var(--muted);
-      margin-top: 10px;
-      line-height: 1.5;
-    }
-
-    @media (min-width: 860px) {
-      .grid { grid-template-columns: 0.85fr 1.15fr; align-items: start; }
-      .row { grid-template-columns: 1fr 1fr; }
-    }
-
-    @media (max-width: 520px) {
-      .app { padding: 10px; }
-      .header { padding: 18px; border-radius: 18px; }
-      .header h1 { font-size: 22px; }
-      .btns { grid-template-columns: 1fr; }
-      .chat { height: 390px; }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Pretendard,"Noto Sans KR","Apple SD Gothic Neo",sans-serif;color:var(--text);background:var(--paper)}
+    button,input{font:inherit}
+    button{cursor:pointer}
+    .app{height:100%;display:grid;grid-template-rows:auto 1fr;overflow:hidden}
+    header{z-index:1000;background:linear-gradient(135deg,var(--navy),var(--navy-2));padding:14px 16px 12px;color:#fff;box-shadow:0 5px 20px rgba(12,28,48,.2)}
+    .title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1280px;margin:auto}
+    .brand{display:flex;align-items:center;gap:10px;min-width:0}
+    .badge{width:38px;height:38px;border-radius:11px;background:#fff;color:var(--receiver);display:grid;place-items:center;font-weight:900;box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
+    h1{font-size:1.08rem;line-height:1.25;margin:0;font-weight:800;letter-spacing:-.02em}
+    .subtitle{font-size:.78rem;color:#cbd8e9;margin-top:3px}
+    .draft{font-size:.72rem;font-weight:800;padding:5px 8px;border-radius:999px;background:#ffcf5a;color:#3d3000;white-space:nowrap}
+    .search-wrap{max-width:1280px;margin:12px auto 0;display:flex;gap:8px}
+    .search{position:relative;flex:1}
+    .search input{width:100%;height:44px;border:0;border-radius:12px;padding:0 42px 0 42px;color:var(--text);outline:none;box-shadow:0 4px 12px rgba(5,16,31,.12)}
+    .search::before{content:'⌕';position:absolute;left:14px;top:7px;color:#43526a;font-size:1.55rem;z-index:1}
+    .clear{display:none;position:absolute;right:9px;top:8px;width:28px;height:28px;border:0;border-radius:50%;background:#e8edf4;color:#516078}
+    .locate{height:44px;padding:0 14px;border:1px solid rgba(255,255,255,.3);border-radius:12px;background:rgba(255,255,255,.12);color:#fff;font-weight:700;white-space:nowrap}
+    main{position:relative;min-height:0}
+    #map{height:100%;width:100%;background:#dfe6ec}
+    .legend{position:absolute;z-index:500;left:112px;top:10px;background:rgba(255,255,255,.96);padding:10px 12px;border-radius:12px;box-shadow:0 6px 20px rgba(22,38,61,.16);font-size:.8rem;line-height:1.8}
+    .legend-title{font-weight:800;border-bottom:1px solid var(--line);margin-bottom:5px}
+    .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:7px;vertical-align:-1px;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.18)}
+    .dot.apt{background:var(--navy)} .dot.receiver{background:var(--receiver-marker)} .dot.siamese{background:var(--siamese)}
+    .list-panel{position:absolute;z-index:600;right:14px;top:14px;width:300px;max-height:calc(100% - 28px);overflow:auto;background:rgba(255,255,255,.97);border-radius:16px;box-shadow:var(--shadow);padding:12px}
+    .panel-head{display:flex;align-items:center;justify-content:space-between;padding:2px 3px 9px}
+    .panel-head strong{font-size:.95rem}.count{color:var(--muted);font-size:.78rem}
+    .apt-card{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px;margin-bottom:8px;color:var(--text)}
+    .apt-card:hover,.apt-card:focus{border-color:#8ca5c5;background:#f7faff;outline:none}
+    .apt-card.active{border:2px solid var(--navy-2);background:#edf4fd}
+    .apt-name{font-size:.94rem;font-weight:800}.apt-address{font-size:.75rem;color:var(--muted);margin-top:5px;line-height:1.4}
+    .facility-count{font-size:.72rem;color:#40516a;margin-top:8px}
+    .marker{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:3px solid #fff;box-shadow:0 3px 9px rgba(0,0,0,.3);color:#fff;font-weight:900}
+    .marker span{font-size:.7rem}.marker.apt{background:var(--navy)}
+    .facility-marker{width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.42);cursor:pointer;transition:transform .15s,opacity .15s}
+    .dong-marker{padding:2px 5px;border:1.5px solid #203a60;border-radius:5px;background:rgba(255,255,255,.94);color:#152640;font-size:11px;font-weight:900;line-height:1;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.24);pointer-events:none}.dong-marker.hidden{display:none}.facility-marker:hover{transform:scale(1.25)}.facility-marker.receiver{background:var(--receiver-marker);border-radius:50%}.facility-marker.siamese{background:var(--siamese)}.facility-marker.hidden{display:none}
+    .map-style-control{display:flex;flex-direction:column;gap:4px;margin:10px}.map-style-control button{min-width:76px;border:1px solid #c9d2df;border-radius:6px;background:#fff;color:#243550;padding:7px 9px;font-size:.76rem;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.13)}.map-style-control button.active{background:#203a60;color:#fff;border-color:#203a60}
+    .detail{position:absolute;z-index:700;left:50%;bottom:18px;transform:translate(-50%,calc(100% + 40px));opacity:0;width:min(620px,calc(100% - 28px));background:#fff;border-radius:18px;box-shadow:var(--shadow);transition:.25s ease;padding:18px;pointer-events:none}
+    .detail.open{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+    .detail-top{display:flex;gap:12px;justify-content:space-between;align-items:flex-start}
+    .detail-type{font-size:.74rem;font-weight:800;margin-bottom:4px}.detail h2{font-size:1.08rem;margin:0 0 4px}.detail p{margin:0;color:var(--muted);font-size:.85rem;line-height:1.55}
+    .close{border:0;background:#eef2f7;color:#40516a;width:34px;height:34px;border-radius:10px;font-size:1.1rem}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.info{background:#f5f7fa;border-radius:10px;padding:10px}.info b{display:block;font-size:.72rem;color:var(--muted);margin-bottom:4px}.info span{font-size:.86rem;line-height:1.4}
+    .notice{position:absolute;z-index:550;left:50%;bottom:14px;transform:translateX(-50%);background:#fff8db;color:#574600;border:1px solid #ead993;border-radius:999px;padding:8px 12px;font-size:.72rem;box-shadow:0 4px 14px rgba(0,0,0,.1);white-space:nowrap}
+    .maplibregl-ctrl-attrib{font-size:9px!important}
+    @media(max-width:720px){
+      header{padding:11px 12px 10px}.badge{width:34px;height:34px}.subtitle{display:none}.draft{font-size:.66rem}.search-wrap{margin-top:9px}.locate{width:44px;padding:0;font-size:0}.locate::after{content:'◎';font-size:1.25rem}
+      .map-style-control{flex-direction:row;gap:3px;margin:0 0 62px 10px}.map-style-control button{min-width:0;padding:7px 9px;font-size:.68rem}
+      .legend{left:10px;right:auto;top:10px;padding:7px 9px;font-size:.68rem;line-height:1.5}.legend-title{margin-bottom:3px}
+      .list-panel{left:auto;right:10px;top:10px;width:168px;max-height:34%;padding:7px;border-radius:12px}.panel-head{padding:1px 2px 6px}.panel-head strong{font-size:.8rem}.count{font-size:.68rem}.apt-card{padding:7px 8px;margin-bottom:5px;border-radius:9px}.apt-name{font-size:.76rem;line-height:1.35}.apt-address{display:none}.facility-count{margin-top:3px;font-size:.62rem;line-height:1.35}.notice{bottom:9px;width:calc(100% - 20px);max-width:680px;white-space:normal;text-align:center;line-height:1.35;padding:7px 12px}
+      .detail{bottom:10px;padding:15px}.info-grid{grid-template-columns:1fr}.detail h2{font-size:1rem}
     }
   </style>
 </head>
 <body>
-  <main class="app">
-    <section class="header">
-      <h1>FireLaw AI</h1>
-      <p>GPTs 프롬프트를 OpenAI API로 호출하는 소방 실무형 AI 웹앱</p>
-    </section>
-
-    <section class="grid">
-      <div class="card">
-        <div class="title-row">
-          <h2>① 질문 입력</h2>
-          <span class="badge">GPT API 연결형</span>
-        </div>
-
-        <label for="mainQuery">최초 질문</label>
-        <textarea id="mainQuery" placeholder="예: 민원인이 구조일지 발급을 요청했는데 구조대상자, 가족도 아닌 제3자일 경우 어떻게 해야 할까요?"></textarea>
-
-        <div class="row">
-          <div>
-            <label for="mode">답변 모드</label>
-            <select id="mode">
-              <option value="법령 해석">법령 해석</option>
-              <option value="현장 대응">현장 대응</option>
-              <option value="상황보고">상황보고</option>
-              <option value="공문작성">공문작성</option>
-              <option value="체크리스트">체크리스트</option>
-            </select>
-          </div>
-          <div>
-            <label for="riskLevel">긴급도</label>
-            <select id="riskLevel">
-              <option value="일반">일반</option>
-              <option value="주의">주의</option>
-              <option value="긴급">긴급</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="btns">
-          <button class="primary" onclick="runMainAnalysis()">AI 해석 생성</button>
-          <button class="gray" onclick="resetAll()">전체 초기화</button>
-        </div>
-
-        <p class="status" id="status">대기 중</p>
-
-        <hr style="border:none;border-top:1px solid var(--line);margin:16px 0;" />
-
-        <div class="title-row">
-          <h2>② 현재 상황 요약</h2>
-          <span class="badge">맥락 기억</span>
-        </div>
-
-        <div class="summary">
-          <div><b>질문 주제</b><span id="sumTopic">미입력</span></div>
-          <div><b>핵심 조건</b><span id="sumFacts">미입력</span></div>
-          <div><b>답변 모드</b><span id="sumMode">법령 해석</span></div>
-          <div><b>대화 수</b><span id="sumCount">0회</span></div>
-        </div>
-
-        <div class="btns">
-          <button class="soft" onclick="quickAsk('방금 내용을 상황보고 형식으로 작성해줘')">상황보고 전환</button>
-          <button class="green" onclick="quickAsk('방금 내용을 공문 또는 민원 답변 문구로 작성해줘')">공문/답변 전환</button>
-          <button class="soft" onclick="quickAsk('현장에서 바로 확인할 체크리스트로 정리해줘')">체크리스트</button>
-          <button class="gray" onclick="copyContext()">맥락 복사</button>
-        </div>
+  <div class="app">
+    <header>
+      <div class="title-row">
+        <div class="brand"><div class="badge">119</div><div><h1>구리시 공동주택 소방시설 지도</h1><div class="subtitle">아파트 83개소 위치 및 기본정보</div></div></div>
+        <span class="draft">공식 건물 동 위치 반영</span>
       </div>
-
-      <div class="card">
-        <div class="title-row">
-          <h2>③ 하단 챗봇</h2>
-          <span class="badge">이어 질문</span>
-        </div>
-
-        <div class="chat" id="chatBox">
-          <div class="msg ai">상단에 질문을 입력한 뒤 AI 해석을 생성하세요. 이후 아래에서 이어서 질문하면 상단 질문과 기존 답변을 기억해서 답변합니다.</div>
-        </div>
-
-        <label for="chatInput">이어 질문</label>
-        <textarea id="chatInput" placeholder="예: 비공개 결정 통지 문구로 바꿔줘"></textarea>
-
-        <div class="btns">
-          <button class="primary" onclick="sendChat()">전송</button>
-          <button class="dark" onclick="downloadTxt()">TXT 저장</button>
-        </div>
+      <div class="search-wrap">
+        <div class="search"><input id="searchInput" aria-label="아파트 검색" placeholder="아파트명 또는 주소 검색" autocomplete="off"/><button class="clear" id="clearBtn" aria-label="검색어 지우기">×</button></div>
+        <button class="locate" id="locateBtn">현재 위치</button>
       </div>
-    </section>
-  </main>
-
+    </header>
+    <main>
+      <div id="map" aria-label="구리시 공동주택 현황 지도"></div>
+      <div class="legend"><div class="legend-title">시설 범례</div><div><span class="dot siamese"></span>연결송수관</div><div><span class="dot receiver"></span>수신반</div></div>
+      <aside class="list-panel"><div class="panel-head"><strong>아파트 목록</strong><span class="count" id="count"></span></div><div id="aptList"></div></aside>
+      <section class="detail" id="detail" aria-live="polite"><div class="detail-top"><div><div class="detail-type" id="detailType"></div><h2 id="detailTitle"></h2><p id="detailSubtitle"></p></div><button class="close" id="closeDetail" aria-label="상세정보 닫기">×</button></div><div class="info-grid" id="detailGrid"></div></section>
+      <div class="notice" id="notice">시설 좌표 데이터를 불러오는 중입니다.</div>
+    </main>
+  </div>
+  <script src="https://unpkg.com/maplibre-gl@5.7.1/dist/maplibre-gl.js"></script>
   <script>
-    const state = {
-      mainQuery: "",
-      mainAnswer: "",
-      mode: "법령 해석",
-      riskLevel: "일반",
-      chatHistory: [],
-      facts: {}
-    };
-
-    const FIRELAW_SYSTEM_PROMPT = `# 소방법령 해석 전문가 AI 통합 프롬프트
-
-Role:
-소방법령 해석 전문가 역할을 수행합니다.
-
-Context(상황):
-- 사용자는 소방공무원, 안전관리자 또는 관계인
-- 사용자는 소방법령 또는 관련 법령을 빠르게 찾고 실무에 적용하려고 함
-- 답변은 단순 법령 설명이 아니라 “현장 실무 수행 및 행정처리” 중심으로 제공해야 함
-
-Instructions(단계별 지시사항):
-- 질문의 핵심 상황을 먼저 분석한다
-- 관련 소방법령(법, 시행령, 시행규칙, 화재안전기준, 재난현장 표준작전절차(SOP) 등)을 찾는다
-- 필요한 경우 타 법령(건축법, 위험물안전관리법, 다중이용업소법, 도로교통법 등)도 함께 검토한다
-- 관련 조항 및 핵심 내용을 간결하게 정리한다
-- 법령을 “현장 적용 기준” 중심으로 실무적으로 해석한다
-- 단순 조문 나열이 아니라 실제 현장에서 어떻게 적용되는지 설명한다
-- 위반 여부 판단 기준을 명확하게 제시한다
-- 필요 시 예외사항 또는 판단이 달라질 수 있는 조건도 설명한다
-- 행정조치(시정명령, 과태료, 조치명령, 기관통보 등)를 안내한다
-- 요청 시 소방 실무에서 사용하는 공문, 안내문, 보고서 형태로 작성한다
-- 답변 후 실제 현장에서 이어서 해야 할 “다음 업무 절차”를 단계별로 제안한다
-- 필요 시 후속 행정 흐름(보고, 통보, 현장확인, 시스템 입력 등)을 안내한다
-- 소방공무원 실무 기준으로 “지금 바로 해야 할 행동” 중심으로 설명한다
-- 상황에 따라 추가 확인이 필요한 사항(관할, 대상물 용도, 층수, 면적, 설치연도, 수용인원 등)을 제시한다
-- 실무상 주의사항 또는 민원·감사 대응 시 유의사항이 있다면 함께 안내한다
-- 답변 마지막에 관련된 연관 질문 3가지를 자동 생성한다
-
-Constraints(제약사항):
-- 최신 개정 법령 기준으로 검토하되, 최신성 확인이 어려운 경우 반드시 “최신 개정 여부 확인 필요”라고 표시한다
-- 한글로 작성한다
-- 법령 용어는 정확하게 사용한다
-- 해석은 실무 중심으로 단순하고 명확하게 작성한다
-- 불확실한 내용은 반드시 “추정”, “확인 필요”, “관할 판단 필요” 등으로 표시한다
-- 단순 법조문 복사보다 실무 적용성과 이해도를 우선한다
-- 사용자가 바로 현장 조치할 수 있도록 단계형으로 설명한다
-- 법령 간 충돌 가능성이 있는 경우 이를 함께 설명한다
-- 과도한 추측이나 임의 해석은 금지한다
-- 실제 현장 및 행정 실무에 적용 가능한 수준으로 작성한다
-
-Output Indicator(출력 형식):
-답변은 반드시 아래 순서를 유지하여 작성한다.
-1. 관련 법령 조항
-2. 핵심 요약
-3. 현장 적용 기준
-4. 위반 판단 기준
-5. 행정조치
-6. 다음 업무 절차
-7. 추가 확인 필요사항
-8. 실무상 주의사항
-9. 연관 질문 3가지
-
-추가 규칙:
-- 항목 제목을 생략하지 않는다
-- 출력 순서를 변경하지 않는다
-- 실무자가 바로 사용할 수 있도록 작성한다
-- 단순 설명형 답변보다 현장 대응 및 행정 실무 중심으로 작성한다`;
-
-    async function runMainAnalysis() {
-      const query = document.getElementById("mainQuery").value.trim();
-      const mode = document.getElementById("mode").value;
-      const riskLevel = document.getElementById("riskLevel").value;
-
-      if (!query) {
-        alert("질문을 입력해 주세요.");
-        return;
-      }
-
-      state.mainQuery = query;
-      state.mode = mode;
-      state.riskLevel = riskLevel;
-      state.facts = extractFacts(query);
-
-      addMessage("user", query);
-
-      const userPrompt = makeUserPrompt(query);
-      const answer = await callFireLawApi(userPrompt);
-
-      state.mainAnswer = answer;
-      state.chatHistory.push({ role: "user", content: query });
-      state.chatHistory.push({ role: "assistant", content: answer });
-
-      addMessage("ai", answer);
-      updateSummary();
+    // 엑셀 '시설좌표입력' 시트의 GPS 실측 좌표를 HTML 내부에 포함했습니다.
+    const embeddedDongLabels={"APT-001":[{"label":"301동","lat":37.5933016,"lng":127.1525045,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"302동","lat":37.593774,"lng":127.1524169,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-002":[{"label":"301동","lat":37.5880201,"lng":127.1384472,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"302동","lat":37.5880234,"lng":127.1391427,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-003":[{"label":"101동","lat":37.5880165,"lng":127.1481662,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5878234,"lng":127.1478935,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-004":[{"label":"101동","lat":37.5987883,"lng":127.1293517,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5992895,"lng":127.1293378,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.599758,"lng":127.1294169,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.6001286,"lng":127.1293335,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.5994093,"lng":127.1286021,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.5999369,"lng":127.1287479,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-005":[{"label":"101동","lat":37.5915379,"lng":127.146799,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5916182,"lng":127.1475198,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5919254,"lng":127.1487233,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-006":[{"label":"101동","lat":37.5896635,"lng":127.1350081,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5896669,"lng":127.135857,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5890872,"lng":127.1358804,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.5890982,"lng":127.1350323,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"201동","lat":37.5885468,"lng":127.1350348,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"202동","lat":37.5885075,"lng":127.1358835,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"203동","lat":37.5880127,"lng":127.1351258,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"204동","lat":37.5880112,"lng":127.1359746,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-007":[{"label":"301동","lat":37.5853712,"lng":127.1373813,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"302동","lat":37.5852266,"lng":127.1369188,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"303동","lat":37.5853715,"lng":127.1364581,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"304동","lat":37.5860284,"lng":127.1364609,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"305동","lat":37.5858934,"lng":127.1369106,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"306동","lat":37.5860286,"lng":127.1373618,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-008":[{"label":"101동","lat":37.5911556,"lng":127.1341863,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.591745,"lng":127.1339462,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5913346,"lng":127.1333101,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.5909679,"lng":127.1336252,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.5903338,"lng":127.1339373,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.5900488,"lng":127.1343741,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.5897004,"lng":127.1339849,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"108동","lat":37.5890682,"lng":127.134053,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"109동","lat":37.5890619,"lng":127.1331677,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"110동","lat":37.5893618,"lng":127.1326895,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"111동","lat":37.5896962,"lng":127.1331615,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"112동","lat":37.5903314,"lng":127.1332494,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-009":[{"label":"201동","lat":37.5866089,"lng":127.1369378,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"202동","lat":37.586966,"lng":127.1374022,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"203동","lat":37.5869613,"lng":127.1364568,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-010":[{"label":"101동","lat":37.5943072,"lng":127.1362146,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5944836,"lng":127.136896,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5942519,"lng":127.1370478,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.5940675,"lng":127.136267,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.5938274,"lng":127.1363232,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.5940124,"lng":127.1371064,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.593773,"lng":127.1371638,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"108동","lat":37.5935873,"lng":127.1363756,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"109동","lat":37.5933442,"lng":127.1364512,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"110동","lat":37.5935101,"lng":127.1372075,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"111동","lat":37.5932626,"lng":127.1372679,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"112동","lat":37.5930952,"lng":127.1365095,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"113동","lat":37.5928471,"lng":127.1365629,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"114동","lat":37.593015,"lng":127.1373268,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"115동","lat":37.5927681,"lng":127.1373877,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"116동","lat":37.5925998,"lng":127.1366187,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-011":[{"label":"101동","lat":37.587047,"lng":127.1337497,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5870444,"lng":127.1332864,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5869915,"lng":127.1324244,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.5866897,"lng":127.1329398,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.5864728,"lng":127.1332801,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.5862623,"lng":127.1336721,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.586067,"lng":127.1341471,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-012":[{"label":"101동","lat":37.5862847,"lng":127.1444828,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5859352,"lng":127.1436791,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5863399,"lng":127.1433601,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.5857179,"lng":127.1431998,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.5861516,"lng":127.1428639,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.586638,"lng":127.142421,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.5859215,"lng":127.1423186,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"108동","lat":37.5855901,"lng":127.1428927,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-013":[{"label":"101동","lat":37.5941057,"lng":127.1378997,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5949497,"lng":127.1376475,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-014":[{"label":"201동","lat":37.5919831,"lng":127.1366353,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"202동","lat":37.5920385,"lng":127.1372415,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"203동","lat":37.591801,"lng":127.1376325,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"204동","lat":37.5914153,"lng":127.1372379,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"205동","lat":37.5914158,"lng":127.1366739,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"206동","lat":37.5908293,"lng":127.1367116,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"207동","lat":37.5908538,"lng":127.1373883,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"208동","lat":37.5904493,"lng":127.1376403,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"209동","lat":37.5902187,"lng":127.1372323,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"210동","lat":37.590216,"lng":127.1366156,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-015":[{"label":"101동","lat":37.5915464,"lng":127.1348384,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5918497,"lng":127.135241,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5918814,"lng":127.1358824,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.5913109,"lng":127.1357847,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.5907614,"lng":127.1357886,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.5902159,"lng":127.1358933,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.5902125,"lng":127.1351442,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"108동","lat":37.5905317,"lng":127.1348471,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-016":[{"label":"101동","lat":37.5926636,"lng":127.1545301,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5932315,"lng":127.1545327,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5931495,"lng":127.1552267,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-017":[{"label":"601동","lat":37.5953905,"lng":127.1538118,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"602동","lat":37.5949053,"lng":127.1533384,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"603동","lat":37.5942656,"lng":127.1529464,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-018":[{"label":"1동","lat":37.5911288,"lng":127.143119,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"2동","lat":37.5907608,"lng":127.1433801,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"3동","lat":37.5911335,"lng":127.1439913,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"4동","lat":37.5904683,"lng":127.1437497,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"5동","lat":37.5909532,"lng":127.1445487,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-019":[{"label":"501동","lat":37.5960718,"lng":127.1521504,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"502동","lat":37.5955114,"lng":127.1521408,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"503동","lat":37.5953566,"lng":127.151706,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"504동","lat":37.5950142,"lng":127.1519319,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"505동","lat":37.5945584,"lng":127.1515241,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"506동","lat":37.5944258,"lng":127.1521641,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"507동","lat":37.5948428,"lng":127.1524902,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"508동","lat":37.5952671,"lng":127.1527208,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"509동","lat":37.5957353,"lng":127.1529955,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-020":[{"label":"101동","lat":37.5944051,"lng":127.1399198,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5939038,"lng":127.1396105,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5935855,"lng":127.1395214,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-021":[{"label":"501동","lat":37.5890315,"lng":127.1456562,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"502동","lat":37.5886632,"lng":127.146171,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"503동","lat":37.588289,"lng":127.1466144,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"504동","lat":37.588159,"lng":127.145968,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"505동","lat":37.5885486,"lng":127.1454188,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"506동","lat":37.5889796,"lng":127.1450102,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-022":[{"label":"301동","lat":37.5885741,"lng":127.1443202,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"302동","lat":37.5881212,"lng":127.1437241,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"303동","lat":37.5876025,"lng":127.1440192,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"304동","lat":37.5880617,"lng":127.1447643,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"305동","lat":37.5874183,"lng":127.1450534,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-023":[{"label":"101동","lat":37.5963654,"lng":127.1373381,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5958947,"lng":127.1374596,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-024":[{"label":"101동","lat":37.6005085,"lng":127.1490415,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6007862,"lng":127.1492873,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.6003845,"lng":127.1495226,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.5999467,"lng":127.1493888,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.5998992,"lng":127.1498212,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-025":[{"label":"101동","lat":37.5990132,"lng":127.1493103,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5987388,"lng":127.1486699,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5983748,"lng":127.1491612,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-026":[],"APT-027":[{"label":"101동","lat":37.5976744,"lng":127.1288019,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.59768,"lng":127.1297015,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5971974,"lng":127.1288073,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.5972028,"lng":127.1296242,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.5972077,"lng":127.1301554,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.5967108,"lng":127.1294796,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.5967153,"lng":127.1302104,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-028":[{"label":"201동","lat":37.5934362,"lng":127.1532647,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"202동","lat":37.5933445,"lng":127.1539146,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"203동","lat":37.592738,"lng":127.153167,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"204동","lat":37.5927172,"lng":127.1539319,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"205동","lat":37.5921379,"lng":127.1535566,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-029":[{"label":"101동","lat":37.5924779,"lng":127.1404026,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-030":[{"label":"201동","lat":37.5877962,"lng":127.1427168,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"202동","lat":37.587938,"lng":127.1419753,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"203동","lat":37.5884699,"lng":127.1418958,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"204동","lat":37.5887695,"lng":127.1424687,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"205동","lat":37.5883668,"lng":127.142942,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-031":[{"label":"101동","lat":37.6002928,"lng":127.1470809,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.600107,"lng":127.1466679,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5999705,"lng":127.1470453,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.5998294,"lng":127.1474105,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-032":[{"label":"501동","lat":37.5861626,"lng":127.1387185,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"502동","lat":37.5861576,"lng":127.1396949,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"503동","lat":37.5855052,"lng":127.1387133,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"504동","lat":37.5855007,"lng":127.1398434,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"505동","lat":37.5848554,"lng":127.1386473,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"506동","lat":37.584879,"lng":127.139628,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-033":[{"label":"101동","lat":37.5908794,"lng":127.1388008,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5908832,"lng":127.1399208,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5903242,"lng":127.1404137,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.5900981,"lng":127.1395079,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.5900934,"lng":127.1386453,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-034":[{"label":"101동","lat":37.5890426,"lng":127.1387412,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5895614,"lng":127.1385566,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.589567,"lng":127.1393318,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.5894541,"lng":127.139934,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.589072,"lng":127.1396579,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.5886534,"lng":127.1392375,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.5886598,"lng":127.1383773,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-035":[{"label":"101동","lat":37.5880202,"lng":127.137423,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.5885178,"lng":127.1373898,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.5890699,"lng":127.1374759,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.5896425,"lng":127.1373782,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.5896873,"lng":127.1367101,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.5892007,"lng":127.1366844,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"108동","lat":37.5885739,"lng":127.1365242,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"109동","lat":37.5880137,"lng":127.1366422,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-036":[],"APT-037":[],"APT-038":[],"APT-039":[],"APT-040":[{"label":"101동","lat":37.6059224,"lng":127.1356142,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6054827,"lng":127.1358851,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-041":[{"label":"201동","lat":37.6107015,"lng":127.1407696,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"202동","lat":37.6108213,"lng":127.1413995,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"203동","lat":37.6102509,"lng":127.1413961,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"204동","lat":37.6105813,"lng":127.1419865,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"205동","lat":37.6108821,"lng":127.1423059,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"206동","lat":37.6102551,"lng":127.1425689,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"207동","lat":37.6099219,"lng":127.142958,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"208동","lat":37.6093976,"lng":127.1429983,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"209동","lat":37.609152,"lng":127.143469,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"210동","lat":37.6089403,"lng":127.1427317,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"211동","lat":37.6095905,"lng":127.1424091,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"212동","lat":37.6096617,"lng":127.1417544,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"213동","lat":37.6095591,"lng":127.1411692,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-042":[{"label":"201동","lat":37.6124181,"lng":127.1393804,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"202동","lat":37.6129336,"lng":127.1392447,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"203동","lat":37.6134559,"lng":127.1391544,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"204동","lat":37.6139647,"lng":127.1390798,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"205동","lat":37.6125647,"lng":127.1386049,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"206동","lat":37.6131014,"lng":127.1385217,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"207동","lat":37.6136217,"lng":127.1385626,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-043":[{"label":"601동","lat":37.6055426,"lng":127.1439803,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"602동","lat":37.6060561,"lng":127.1439298,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"603동","lat":37.6065386,"lng":127.1437591,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"604동","lat":37.6064026,"lng":127.144424,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"605동","lat":37.6067489,"lng":127.1448624,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"606동","lat":37.6066312,"lng":127.1453111,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"607동","lat":37.6061625,"lng":127.1449905,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"608동","lat":37.6059421,"lng":127.1454691,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"609동","lat":37.6056705,"lng":127.1451889,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"610동","lat":37.6053549,"lng":127.1447248,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-044":[{"label":"1동","lat":37.6085157,"lng":127.1319118,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"2동","lat":37.6085756,"lng":127.1324334,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"101동","lat":37.6097819,"lng":127.13124,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6092426,"lng":127.1311066,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.6093106,"lng":127.132004,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.6087757,"lng":127.1318527,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.6088519,"lng":127.132486,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-045":[{"label":"401동","lat":37.6069451,"lng":127.1433136,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"402동","lat":37.6072546,"lng":127.1437501,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"403동","lat":37.6074994,"lng":127.1434706,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"404동","lat":37.6075287,"lng":127.1430464,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"405동","lat":37.6077387,"lng":127.1422772,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"406동","lat":37.6079284,"lng":127.1416112,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"407동","lat":37.6082019,"lng":127.1420604,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"408동","lat":37.6083751,"lng":127.1428406,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"409동","lat":37.6082704,"lng":127.1434954,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"410동","lat":37.6085484,"lng":127.1438281,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"411동","lat":37.6079548,"lng":127.1437278,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"412동","lat":37.6083862,"lng":127.1442612,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"413동","lat":37.6078404,"lng":127.1441999,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"414동","lat":37.6080792,"lng":127.1446164,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"415동","lat":37.6075373,"lng":127.1450431,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"416동","lat":37.607274,"lng":127.1444098,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-046":[{"label":"501동","lat":37.6057337,"lng":127.1421328,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"502동","lat":37.6062281,"lng":127.1424215,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"503동","lat":37.6063841,"lng":127.1431305,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"504동","lat":37.6058594,"lng":127.1430688,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"505동","lat":37.6055975,"lng":127.1434112,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"506동","lat":37.6052017,"lng":127.1432725,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"507동","lat":37.6050396,"lng":127.1435982,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"508동","lat":37.6048673,"lng":127.1427995,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"509동","lat":37.6051014,"lng":127.1422633,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"510동","lat":37.6054844,"lng":127.1426039,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-047":[{"label":"301동","lat":37.6083607,"lng":127.1314138,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"302동","lat":37.6084669,"lng":127.1310415,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"303동","lat":37.6081058,"lng":127.1312908,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-048":[{"label":"201동","lat":37.6076383,"lng":127.1318869,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"202동","lat":37.6071394,"lng":127.1317898,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"203동","lat":37.6068624,"lng":127.1322846,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"204동","lat":37.6064088,"lng":127.1322414,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-049":[{"label":"301동","lat":37.6078138,"lng":127.1405129,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"302동","lat":37.6076746,"lng":127.1398484,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"303동","lat":37.6072791,"lng":127.1395393,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"304동","lat":37.6070731,"lng":127.1400423,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"305동","lat":37.6072972,"lng":127.1406247,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"306동","lat":37.6066951,"lng":127.1397351,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"307동","lat":37.6064405,"lng":127.1401984,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"308동","lat":37.6068218,"lng":127.1409286,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"309동","lat":37.6066319,"lng":127.1414321,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"310동","lat":37.6062865,"lng":127.141038,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"311동","lat":37.6057334,"lng":127.1411921,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"312동","lat":37.6056147,"lng":127.1404351,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"313동","lat":37.6057616,"lng":127.1400502,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-050":[{"label":"401동","lat":37.6113357,"lng":127.1316838,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"402동","lat":37.6110289,"lng":127.131533,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"403동","lat":37.6104321,"lng":127.1317939,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"404동","lat":37.6105724,"lng":127.1312939,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-051":[{"label":"501동","lat":37.6115501,"lng":127.1323093,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"502동","lat":37.6111691,"lng":127.1327449,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"503동","lat":37.6109081,"lng":127.1324035,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"504동","lat":37.6105966,"lng":127.1327582,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"505동","lat":37.6103165,"lng":127.1325877,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-052":[{"label":"101동","lat":37.6082151,"lng":127.1392613,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6083116,"lng":127.1398889,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.6085035,"lng":127.1394572,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.6089092,"lng":127.1395665,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.6090085,"lng":127.1390662,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.6095716,"lng":127.1388832,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.610018,"lng":127.1390233,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"108동","lat":37.6103043,"lng":127.1386294,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"109동","lat":37.6103991,"lng":127.1392058,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"110동","lat":37.610539,"lng":127.1398114,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"111동","lat":37.6099433,"lng":127.1396418,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"112동","lat":37.6097841,"lng":127.140166,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"113동","lat":37.6092666,"lng":127.1400784,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"114동","lat":37.6090953,"lng":127.1405587,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"115동","lat":37.6086943,"lng":127.140375,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-053":[{"label":"1동","lat":37.6036391,"lng":127.1359011,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"2동","lat":37.6033346,"lng":127.1366167,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-054":[{"label":"101동","lat":37.6127727,"lng":127.1370295,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6123928,"lng":127.1367445,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.6120699,"lng":127.1370199,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.6121451,"lng":127.1359802,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.6125136,"lng":127.1362401,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-055":[{"label":"101동","lat":37.6115164,"lng":127.135902,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6116961,"lng":127.1362545,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.6115434,"lng":127.1368063,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.6112265,"lng":127.1363414,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.6111775,"lng":127.1372372,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.6109677,"lng":127.1368011,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-056":[{"label":"101동","lat":37.613149,"lng":127.1359484,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6133514,"lng":127.1365657,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-057":[{"label":"101동","lat":37.6078683,"lng":127.1326976,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6073845,"lng":127.132764,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.6076002,"lng":127.133104,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.6077262,"lng":127.1336015,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.6072202,"lng":127.1334944,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.6068042,"lng":127.1338684,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.6067042,"lng":127.1333921,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-058":[{"label":"601동","lat":37.6097707,"lng":127.1327485,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"602동","lat":37.6097455,"lng":127.1331748,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-059":[{"label":"101동","lat":37.6189728,"lng":127.1417391,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6187609,"lng":127.1425583,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.6184985,"lng":127.1430725,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.6181009,"lng":127.1433282,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.6180503,"lng":127.1428836,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.6180016,"lng":127.1421576,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"108동","lat":37.6184999,"lng":127.1417537,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-060":[{"label":"101동","lat":37.6116388,"lng":127.1331919,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6118713,"lng":127.1329456,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.6120746,"lng":127.1334213,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.6117178,"lng":127.1337538,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.611684,"lng":127.1343156,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.6114119,"lng":127.1346206,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.6113895,"lng":127.1341654,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-061":[{"label":"701동","lat":37.6087347,"lng":127.1343925,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"702동","lat":37.6089388,"lng":127.1337867,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"703동","lat":37.6093681,"lng":127.1338726,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"704동","lat":37.6093079,"lng":127.1343756,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"705동","lat":37.609118,"lng":127.1347466,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-062":[{"label":"101동","lat":37.6185337,"lng":127.1396548,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6189261,"lng":127.1399958,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.6185721,"lng":127.1402101,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.6183144,"lng":127.1399286,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.6181287,"lng":127.1402964,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-063":[{"label":"101동","lat":37.6088767,"lng":127.1304752,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-064":[{"label":"101동","lat":37.608554,"lng":127.1360935,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6082264,"lng":127.1366542,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.607958,"lng":127.1371807,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.6087327,"lng":127.1365438,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.6083945,"lng":127.1371634,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.6092925,"lng":127.1370386,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.6089548,"lng":127.1373264,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-065":[],"APT-066":[],"APT-067":[{"label":"101동","lat":37.6051342,"lng":127.1385744,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6053358,"lng":127.1381756,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.6057849,"lng":127.1382373,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.6063153,"lng":127.1380742,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-068":[{"label":"201동","lat":37.6058865,"lng":127.1329146,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"202동","lat":37.6059121,"lng":127.1325381,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"203동","lat":37.6055387,"lng":127.1328034,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"204동","lat":37.6050145,"lng":127.1331602,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-069":[{"label":"101동","lat":37.6173416,"lng":127.142091,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6174802,"lng":127.1426375,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.6171582,"lng":127.1421878,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.6172812,"lng":127.1426594,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.6170253,"lng":127.142462,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.6167606,"lng":127.1426947,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-070":[{"label":"101동","lat":37.6103159,"lng":127.1367891,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"102동","lat":37.6103097,"lng":127.1362253,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"103동","lat":37.6100095,"lng":127.1364619,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"104동","lat":37.6102251,"lng":127.1357208,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"105동","lat":37.6100998,"lng":127.1351386,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"106동","lat":37.6102884,"lng":127.1347362,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"107동","lat":37.6106319,"lng":127.1350824,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"108동","lat":37.6110192,"lng":127.1351441,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"109동","lat":37.6106594,"lng":127.1356825,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"110동","lat":37.6110408,"lng":127.1354467,"source":"국토교통부 GIS건물통합정보(2026-09-09)"},{"label":"111동","lat":37.6106438,"lng":127.1361627,"source":"국토교통부 GIS건물통합정보(2026-09-09)"}],"APT-071":[],"APT-072":[],"APT-073":[],"APT-074":[],"APT-075":[],"APT-076":[],"APT-077":[],"APT-078":[],"APT-079":[],"APT-080":[],"APT-081":[],"APT-082":[],"APT-083":[]};
+    const embeddedFacilities={"APT-046":{"연결송수관":[{"label":"501동 연결송수관","lat":37.60564444,"lng":127.142225,"source":"GPS실측","note":"예시(확보완료)"},{"label":"507동 연결송수관","lat":37.60508611,"lng":127.14363333,"source":"GPS실측","note":"예시(확보완료)"},{"label":"506동 연결송수관","lat":37.60520833,"lng":127.14332222,"source":"GPS실측","note":"예시(확보완료)"},{"label":"504동 연결송수관","lat":37.60572778,"lng":127.14293333,"source":"GPS실측","note":"예시(확보완료)"},{"label":"503동 연결송수관","lat":37.60628056,"lng":127.14298611,"source":"GPS실측","note":"예시(확보완료)"},{"label":"502동 연결송수관","lat":37.60616944,"lng":127.14249167,"source":"GPS실측","note":"예시(확보완료)"},{"label":"508동 연결송수관","lat":37.60489722,"lng":127.14271111,"source":"GPS실측","note":"예시(확보완료)"},{"label":"505동 연결송수관","lat":37.60550278,"lng":127.14340278,"source":"GPS실측","note":"예시(확보완료)"},{"label":"510동 연결송수관","lat":37.60539722,"lng":127.14253611,"source":"GPS실측","note":"예시(확보완료)"},{"label":"509동 연결송수관","lat":37.60503889,"lng":127.14233333,"source":"GPS실측","note":"예시(확보완료)"}],"수신반":[{"label":"508동 수신반","lat":37.60491667,"lng":127.14282778,"source":"GPS실측","note":"예시(확보완료)"},{"label":"505동 수신반","lat":37.60555278,"lng":127.14351667,"source":"GPS실측","note":"예시(확보완료)"},{"label":"503동 수신반","lat":37.60630833,"lng":127.14313056,"source":"GPS실측","note":"예시(확보완료)"},{"label":"510동 수신반","lat":37.60541944,"lng":127.142625,"source":"GPS실측","note":"예시(확보완료)"},{"label":"509동 수신반","lat":37.60514444,"lng":127.14229167,"source":"GPS실측","note":"예시(확보완료)"},{"label":"502동 수신반","lat":37.60615,"lng":127.14243333,"source":"GPS실측","note":"예시(확보완료)"},{"label":"506동 수신반","lat":37.60508056,"lng":127.14337222,"source":"GPS실측","note":"예시(확보완료)"}]},"APT-043":{"연결송수관":[{"label":"601동 연결송수관","lat":37.60559167,"lng":127.14389444,"source":"엑셀 입력","note":""},{"label":"602동 연결송수관","lat":37.60608889,"lng":127.14382778,"source":"엑셀 입력","note":""},{"label":"603동 연결송수관","lat":37.6066,"lng":127.14371944,"source":"엑셀 입력","note":""},{"label":"604동 연결송수관","lat":37.60624444,"lng":127.14435556,"source":"엑셀 입력","note":""},{"label":"605동 연결송수관","lat":37.606825,"lng":127.14496111,"source":"엑셀 입력","note":""},{"label":"606동 연결송수관","lat":37.60655556,"lng":127.14518889,"source":"엑셀 입력","note":""},{"label":"607동 연결송수관","lat":37.60623333,"lng":127.14508333,"source":"엑셀 입력","note":""},{"label":"608동 연결송수관","lat":37.60596667,"lng":127.14529444,"source":"엑셀 입력","note":""},{"label":"609동 연결송수관","lat":37.60571944,"lng":127.14511111,"source":"엑셀 입력","note":""},{"label":"610동 연결송수관","lat":37.60541389,"lng":127.14464167,"source":"엑셀 입력","note":""}],"수신반":[{"label":"601동 수신반","lat":37.60549444,"lng":127.14422778,"source":"엑셀 입력","note":""},{"label":"602동 수신반","lat":37.60618889,"lng":127.14419444,"source":"엑셀 입력","note":""},{"label":"604동 수신반","lat":37.60626667,"lng":127.14455278,"source":"엑셀 입력","note":""},{"label":"605동 수신반","lat":37.60674444,"lng":127.14515833,"source":"엑셀 입력","note":""},{"label":"608동 수신반","lat":37.605775,"lng":127.14549167,"source":"엑셀 입력","note":""},{"label":"경로당동 수신반","lat":37.60586667,"lng":127.14405556,"source":"엑셀 입력","note":""}]},"APT-054":{"연결송수관":[{"label":"101동 연결송수관","lat":37.61256389,"lng":127.13725,"source":"엑셀 입력","note":""},{"label":"102동 연결송수관","lat":37.61247222,"lng":127.13664722,"source":"엑셀 입력","note":""},{"label":"103동 연결송수관","lat":37.61211111,"lng":127.136925,"source":"엑셀 입력","note":""},{"label":"104동 연결송수관","lat":37.61212222,"lng":127.13595,"source":"엑셀 입력","note":""},{"label":"105동 연결송수관","lat":37.61238611,"lng":127.13626389,"source":"엑셀 입력","note":""}],"수신반":[{"label":"관리동동 수신반","lat":37.61221389,"lng":127.13761667,"source":"엑셀 입력","note":""}]},"APT-055":{"연결송수관":[{"label":"101동 연결송수관","lat":37.61156111,"lng":127.13605833,"source":"엑셀 입력","note":""},{"label":"102동 연결송수관","lat":37.61163889,"lng":127.13616389,"source":"엑셀 입력","note":""},{"label":"103동 연결송수관","lat":37.61159167,"lng":127.13697222,"source":"엑셀 입력","note":""},{"label":"104동 연결송수관","lat":37.61133333,"lng":127.136225,"source":"엑셀 입력","note":""},{"label":"105동 연결송수관","lat":37.61112778,"lng":127.13713889,"source":"엑셀 입력","note":""},{"label":"106동 연결송수관","lat":37.61102778,"lng":127.13664167,"source":"엑셀 입력","note":""}],"수신반":[{"label":"경로당동 수신반","lat":37.61178333,"lng":127.13655833,"source":"엑셀 입력","note":""},{"label":"102동 수신반","lat":37.61180278,"lng":127.13607222,"source":"엑셀 입력","note":""},{"label":"103동 수신반","lat":37.61161944,"lng":127.13647222,"source":"엑셀 입력","note":""},{"label":"104동 수신반","lat":37.61100833,"lng":127.13607778,"source":"엑셀 입력","note":""},{"label":"105동 수신반","lat":37.61111667,"lng":127.13693333,"source":"엑셀 입력","note":""}]},"APT-056":{"연결송수관":[{"label":"101동 연결송수관","lat":37.613075,"lng":127.13596944,"source":"엑셀 입력","note":""},{"label":"102동 연결송수관","lat":37.61327222,"lng":127.13652778,"source":"엑셀 입력","note":""}],"수신반":[{"label":"관리동동 수신반","lat":37.61304167,"lng":127.13609444,"source":"엑셀 입력","note":""}]},"APT-057":{"연결송수관":[{"label":"101동 연결송수관","lat":37.607725,"lng":127.13275833,"source":"엑셀 입력","note":""},{"label":"102동 연결송수관","lat":37.60747222,"lng":127.13278333,"source":"엑셀 입력","note":""},{"label":"103동 연결송수관","lat":37.60763889,"lng":127.1333,"source":"엑셀 입력","note":""},{"label":"104동 연결송수관","lat":37.60773333,"lng":127.13341667,"source":"엑셀 입력","note":""},{"label":"105동 연결송수관","lat":37.60746389,"lng":127.13353611,"source":"엑셀 입력","note":""},{"label":"106동 연결송수관","lat":37.606725,"lng":127.133825,"source":"엑셀 입력","note":""},{"label":"107동 연결송수관","lat":37.60676944,"lng":127.13334722,"source":"엑셀 입력","note":""}],"수신반":[{"label":"관리동동 수신반","lat":37.60798889,"lng":127.13291944,"source":"엑셀 입력","note":""}]},"APT-060":{"연결송수관":[{"label":"101동 연결송수관","lat":37.61171944,"lng":127.13323333,"source":"엑셀 입력","note":""},{"label":"102동 연결송수관","lat":37.61179722,"lng":127.13289722,"source":"엑셀 입력","note":""},{"label":"103동 연결송수관","lat":37.61193611,"lng":127.13325556,"source":"엑셀 입력","note":""},{"label":"104동 연결송수관","lat":37.61163611,"lng":127.13362222,"source":"엑셀 입력","note":""},{"label":"105동 연결송수관","lat":37.61163056,"lng":127.13419167,"source":"엑셀 입력","note":""},{"label":"106동 연결송수관","lat":37.61141667,"lng":127.13436111,"source":"엑셀 입력","note":""},{"label":"107동 연결송수관","lat":37.61140278,"lng":127.13427222,"source":"엑셀 입력","note":""}],"수신반":[{"label":"관리동동 수신반","lat":37.61158611,"lng":127.13476389,"source":"엑셀 입력","note":""}]},"APT-059":{"연결송수관":[{"label":"101동 연결송수관","lat":37.61876111,"lng":127.14184167,"source":"엑셀 입력","note":""},{"label":"102동 연결송수관","lat":37.61869722,"lng":127.14273889,"source":"엑셀 입력","note":""},{"label":"103동 연결송수관","lat":37.61861389,"lng":127.14303333,"source":"엑셀 입력","note":""},{"label":"105동 연결송수관","lat":37.61816667,"lng":127.14336111,"source":"엑셀 입력","note":""},{"label":"106동 연결송수관","lat":37.61793889,"lng":127.14263889,"source":"엑셀 입력","note":""},{"label":"107동 연결송수관","lat":37.61803056,"lng":127.14238056,"source":"엑셀 입력","note":""}],"수신반":[{"label":"관리동동 수신반","lat":37.61877222,"lng":127.14148056,"source":"엑셀 입력","note":""}]}};
+    // 엑셀 기본정보와 네이버지도에서 확인한 공동주택 중심 좌표입니다.
+    const apartments = [{"id":"APT-001","no":1,"grade":"2급","name":"영풍마드레빌2차아파트","address":"경기도 구리시 토평동 1011","roadAddress":"경기도 구리시 검배로 132","naverName":"영풍마드레빌2차아파트","naverPlaceId":"18168199","blocks":"2","floors":"지하1/지상14","dong":"토평동","lat":37.59357,"lng":127.1523098,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-002","no":2,"grade":"2급","name":"한성3차아파트","address":"경기도 구리시 수택동 854-3","roadAddress":"경기도 구리시 체육관로 40","naverName":"한성3차아파트","naverPlaceId":"18164950","blocks":"2","floors":"지하1/지상20","dong":"수택동","lat":37.5883183,"lng":127.1387189,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-003","no":3,"grade":"2급","name":"유진스웰아파트","address":"경기도 구리시 토평동 269-1","roadAddress":"경기도 구리시 벌말로 129","naverName":"유진스웰아파트","naverPlaceId":"18168231","blocks":"6","floors":"지하1/지상19","dong":"토평동","lat":37.587668,"lng":127.1477715,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-004","no":4,"grade":"2급","name":"교문동금호어울림아파트","address":"경기도 구리시 교문동 828","roadAddress":"경기도 구리시 아차산로487번길 10","naverName":"교문동금호어울림아파트","naverPlaceId":"18161341","blocks":"10","floors":"지하2/지상12","dong":"교문동","lat":37.5992616,"lng":127.129019,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-005","no":5,"grade":"2급","name":"수택동우림아파트","address":"경기도 구리시 수택동 684-11","roadAddress":"경기도 구리시 이문안로139번길 9","naverName":"수택동우림아파트","naverPlaceId":"18165903","blocks":"3","floors":"지하2/지상17","dong":"수택동","lat":37.5915114,"lng":127.1478596,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-006","no":6,"grade":"2급","name":"교문동양고속아파트","address":"경기도 구리시 교문동 809-3","roadAddress":"경기도 구리시 장자대로37번길 20","naverName":"교문동양고속아파트","naverPlaceId":"18160641","blocks":"9","floors":"지하2/지상19","dong":"교문동","lat":37.5893834,"lng":127.1354968,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-007","no":7,"grade":"2급","name":"장자마을신명아파트","address":"경기도 구리시 교문동 826","roadAddress":"경기도 구리시 장자호수길 71","naverName":"장자마을신명아파트","naverPlaceId":"18161227","blocks":"6","floors":"지하1/지상23","dong":"교문동","lat":37.5856851,"lng":127.1368787,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-008","no":8,"grade":"2급","name":"덕현아파트","address":"경기도 구리시 교문동 808","roadAddress":"경기도 구리시 장자대로37번길 55","naverName":"덕현아파트","naverPlaceId":"18161487","blocks":"12","floors":"지하1/지상20","dong":"교문동","lat":37.5906777,"lng":127.1336356,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-009","no":9,"grade":"2급","name":"장자마을동양아파트","address":"경기도 구리시 교문동 825","roadAddress":"경기도 구리시 장자대로 66","naverName":"장자마을동양아파트","naverPlaceId":"18160696","blocks":"6","floors":"지하1/지상23","dong":"교문동","lat":37.586733,"lng":127.1365736,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-010","no":10,"grade":"2급","name":"한성1차아파트","address":"경기도 구리시 교문동 766-1","roadAddress":"경기도 구리시 이문안로 51","naverName":"한성1차아파트","naverPlaceId":"18160610","blocks":"20","floors":"지하1/지상5","dong":"교문동","lat":37.5932213,"lng":127.1369073,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-011","no":11,"grade":"2급","name":"장자마을금호베스트빌1단지아파트","address":"경기도 구리시 교문동 820","roadAddress":"경기도 구리시 장자대로 38","naverName":"장자마을금호베스트빌1단지아파트","naverPlaceId":"18161413","blocks":"9","floors":"지하1/지상25","dong":"교문동","lat":37.5867867,"lng":127.1335217,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-012","no":12,"grade":"2급","name":"토평마을대림e편한세상아파트","address":"경기도 구리시 토평동 955","roadAddress":"경기도 구리시 장자호수길 125","naverName":"토평마을대림e편한세상아파트","naverPlaceId":"1437229496","blocks":"21","floors":"지하1/지상21","dong":"토평동","lat":37.5860212,"lng":127.1428376,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-013","no":13,"grade":"2급","name":"교문일성아파트","address":"경기도 구리시 교문동 767","roadAddress":"경기도 구리시 체육관로 110","naverName":"교문일성아파트","naverPlaceId":"18160746","blocks":"6","floors":"지하1/지상22","dong":"교문동","lat":37.5945831,"lng":127.1380042,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-014","no":14,"grade":"2급","name":"하나아파트","address":"경기도 구리시 교문동 809-1","roadAddress":"경기도 구리시 체육관로 69","naverName":"하나아파트","naverPlaceId":"18161130","blocks":"10","floors":"지하1/지상20","dong":"교문동","lat":37.5912038,"lng":127.137048,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-015","no":15,"grade":"2급","name":"한가람아파트","address":"경기도 구리시 교문동 809","roadAddress":"경기도 구리시 장자대로37번길 70","naverName":"한가람아파트","naverPlaceId":"18160453","blocks":"8","floors":"지하1/지상18","dong":"교문동","lat":37.5911311,"lng":127.1354733,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-016","no":16,"grade":"2급","name":"구리토평우남아파트","address":"경기도 구리시 토평동 1009","roadAddress":"경기도 구리시 검배로 154","naverName":"구리토평우남아파트","naverPlaceId":"18167756","blocks":"6","floors":"지하1/지상20","dong":"토평동","lat":37.5930183,"lng":127.1549159,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-017","no":17,"grade":"2급","name":"검배마을영풍마드레빌1차아파트","address":"경기도 구리시 수택동 885","roadAddress":"경기도 구리시 벌말로 226-6","naverName":"검배마을영풍마드레빌1차아파트","naverPlaceId":"18163698","blocks":"3","floors":"지하1/지상24","dong":"수택동","lat":37.5947413,"lng":127.1531423,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-018","no":18,"grade":"2급","name":"럭키아파트","address":"경기도 구리시 수택동 853","roadAddress":"경기도 구리시 이문안로 124","naverName":"럭키아파트","naverPlaceId":"18165061","blocks":"5","floors":"지하1/지상12","dong":"수택동","lat":37.5910935,"lng":127.1434968,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-019","no":19,"grade":"2급","name":"리버프라임토평아파트","address":"경기도 구리시 수택동 879","roadAddress":"경기도 구리시 벌말로 226","naverName":"리버프라임토평아파트","naverPlaceId":"18165149","blocks":"12","floors":"지하1/지상20","dong":"수택동","lat":37.5952807,"lng":127.1522918,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-020","no":20,"grade":"2급","name":"쌍용아파트","address":"경기도 구리시 수택동 440","roadAddress":"경기도 구리시 원수택로 20","naverName":"쌍용아파트","naverPlaceId":"18164677","blocks":"3","floors":"지하0/지상20","dong":"수택동","lat":37.5940231,"lng":127.1398996,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-021","no":21,"grade":"2급","name":"토평마을상록아파트","address":"경기도 구리시 토평동 959","roadAddress":"경기도 구리시 장자대로111번길 56","naverName":"토평마을상록아파트","naverPlaceId":"18167855","blocks":"16","floors":"지하1/지상24","dong":"토평동","lat":37.5893414,"lng":127.1453829,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-022","no":22,"grade":"2급","name":"구리토평삼성래미안아파트","address":"경기도 구리시 토평동 960","roadAddress":"경기도 구리시 장자대로111번길 12","naverName":"구리토평삼성래미안아파트","naverPlaceId":"18168020","blocks":"6","floors":"지하1/지상22","dong":"토평동","lat":37.5883427,"lng":127.1442218,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-023","no":23,"grade":"2급","name":"참조은동방아파트","address":"경기도 구리시 교문동 1-8","roadAddress":"경기도 구리시 체육관로 124","naverName":"참조은동방아파트","naverPlaceId":"18162299","blocks":"2","floors":"지하0/지상22","dong":"교문동","lat":37.5961284,"lng":127.1376373,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-024","no":24,"grade":"2급","name":"남양아이좋은집아파트","address":"경기도 구리시 수택동 550","roadAddress":"경기도 구리시 경춘로276번길 67-40","naverName":"남양아이좋은집아파트","naverPlaceId":"18162370","blocks":"8","floors":"지하2/지상25","dong":"수택동","lat":37.6003633,"lng":127.1491639,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-025","no":25,"grade":"2급","name":"구리수택주공아파트","address":"경기도 구리시 수택동 549-6","roadAddress":"경기도 구리시 수택천로 60","naverName":"구리수택주공아파트","naverPlaceId":"18163687","blocks":"8","floors":"지하3/지상25","dong":"수택동","lat":37.5988319,"lng":127.1491913,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-026","no":26,"grade":"2급","name":"구리태영데시앙아파트","address":"경기도 구리시 수택동 888","roadAddress":"경기도 구리시 벌말로 185","naverName":"구리태영데시앙아파트","naverPlaceId":"31202928","blocks":"7","floors":"지하2/지상18","dong":"수택동","lat":37.5938694,"lng":127.1498576,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-027","no":27,"grade":"2급","name":"아차산금호어울림아파트","address":"경기도 구리시 교문동 829","roadAddress":"경기도 구리시 아차산로487번길 27","naverName":"아차산금호어울림아파트","naverPlaceId":"18160944","blocks":"9","floors":"지하3/지상12","dong":"교문동","lat":37.5974543,"lng":127.1291038,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-028","no":28,"grade":"2급","name":"검배마을SK신일아파트","address":"경기도 구리시 토평동 1008","roadAddress":"경기도 구리시 검배로 142","naverName":"검배마을SK신일아파트","naverPlaceId":"18167770","blocks":"6","floors":"지하1/지상22","dong":"토평동","lat":37.593018,"lng":127.1535502,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-029","no":29,"grade":"2급","name":"구리신성미소지움아파트","address":"경기도 구리시 수택동 448-6","roadAddress":"경기도 구리시 이문안로 81","naverName":"구리신성미소지움아파트","naverPlaceId":"18164415","blocks":"5","floors":"지하1/지상15","dong":"수택동","lat":37.5925995,"lng":127.1402397,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-030","no":30,"grade":"2급","name":"한일베라체아파트","address":"경기도 구리시 토평동 961","roadAddress":"경기도 구리시 장자대로111번길 11","naverName":"한일베라체아파트","naverPlaceId":"18168172","blocks":"8","floors":"지하1/지상21","dong":"토평동","lat":37.5882795,"lng":127.1423421,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-031","no":31,"grade":"2급","name":"구리수택동금호어울림아파트","address":"경기도 구리시 수택동 542","roadAddress":"경기도 구리시 경춘로276번길 66","naverName":"구리수택동금호어울림아파트","naverPlaceId":"18164150","blocks":"7","floors":"지하0/지상15","dong":"수택동","lat":37.6002494,"lng":127.1470876,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-032","no":32,"grade":"2급","name":"장자마을금호베스트빌5단지2차아파트","address":"경기도 구리시 수택동 877","roadAddress":"경기도 구리시 장자호수길 77","naverName":"장자마을금호베스트빌5단지2차아파트","naverPlaceId":"18165975","blocks":"10","floors":"지하1/지상24","dong":"수택동","lat":37.5859292,"lng":127.1392568,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-033","no":33,"grade":"2급","name":"대림한숲아파트","address":"경기도 구리시 수택동 854","roadAddress":"경기도 구리시 체육관로 66","naverName":"대림한숲아파트","naverPlaceId":"18165186","blocks":"5","floors":"지하1/지상18","dong":"수택동","lat":37.5906235,"lng":127.1393993,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-034","no":34,"grade":"2급","name":"LG원앙아파트","address":"경기도 구리시 수택동 854-2","roadAddress":"경기도 구리시 체육관로 54","naverName":"LG원앙아파트","naverPlaceId":"18165500","blocks":"12","floors":"지하1/지상18","dong":"수택동","lat":37.5893416,"lng":127.1389634,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-035","no":35,"grade":"2급","name":"구리한양우성아파트","address":"경기도 구리시 교문동 809-2","roadAddress":"경기도 구리시 체육관로 45","naverName":"구리한양우성아파트","naverPlaceId":"18160612","blocks":"9","floors":"지하1/지상21","dong":"교문동","lat":37.5890404,"lng":127.1369544,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-036","no":36,"grade":"2급","name":"구리수택행복주택아파트","address":"경기도 구리시 수택동 852","roadAddress":"경기도 구리시 체육관로74번길 67","naverName":"구리수택행복주택아파트","naverPlaceId":"1946455886","blocks":"16","floors":"지하2/지상18","dong":"수택동","lat":37.5915906,"lng":127.1418778,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-037","no":37,"grade":"2급","name":"한양수자인구리역","address":"경기도 구리시 수택동 889","roadAddress":"경기도 구리시 경춘로276번길 21 구리역 한양수자인 리버시티","naverName":"한양수자인구리역","naverPlaceId":"1634328797","blocks":"13","floors":"지하3/지상20","dong":"수택동","lat":37.6024577,"lng":127.1472789,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-038","no":38,"grade":"2급","name":"e편한세상수택센트럴파크","address":"경기도 구리시 수택동 437","roadAddress":"경기도 구리시 안골로64번길 10","naverName":"e편한세상수택센트럴파크","naverPlaceId":"837123203","blocks":"10","floors":"지하3/지상29","dong":"수택동","lat":37.5962042,"lng":127.1396128,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-039","no":39,"grade":"2급","name":"힐스테이트구리역","address":"경기도 구리시 수택동 532","roadAddress":"경기도 구리시 경춘로276번길 34","naverName":"힐스테이트구리역","naverPlaceId":"1460343713","blocks":"9","floors":"지하2/지상20","dong":"수택동","lat":37.6014229,"lng":127.1454346,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-040","no":40,"grade":"2급","name":"구리인창공원우림필유아파트","address":"경기도 구리시 인창동 711","roadAddress":"경기도 구리시 동구릉로66번길 14","naverName":"구리인창공원우림필유아파트","naverPlaceId":"18159869","blocks":"8","floors":"지하2/지상22","dong":"인창동","lat":37.6056125,"lng":127.1355064,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-041","no":41,"grade":"2급","name":"인창포레리움아파트","address":"경기도 구리시 인창동 664-1","roadAddress":"경기도 구리시 건원대로76번길 39","naverName":"인창포레리움아파트","naverPlaceId":"18159459","blocks":"37","floors":"지하2/지상20","dong":"인창동","lat":37.6099178,"lng":127.1429188,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-042","no":42,"grade":"2급","name":"원일가대라곡아파트","address":"경기도 구리시 인창동 691","roadAddress":"경기도 구리시 동구릉로148번길 15","naverName":"원일가대라곡아파트","naverPlaceId":"20980251","blocks":"13","floors":"지하2/지상17","dong":"인창동","lat":37.6132884,"lng":127.1394276,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-043","no":43,"grade":"2급","name":"구리인창6단지아파트","address":"경기도 구리시 인창동 668-1","roadAddress":"경기도 구리시 건원대로34번길 77","naverName":"구리인창6단지아파트","naverPlaceId":"18158141","blocks":"11","floors":"지하1/지상20","dong":"인창동","lat":37.6060349,"lng":127.1445778,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-044","no":44,"grade":"2급","name":"아름마을원일아파트","address":"경기도 구리시 인창동 651-27","roadAddress":"경기도 구리시 동구릉로85번길 17","naverName":"아름마을원일아파트","naverPlaceId":"18159026","blocks":"13","floors":"지하2/지상23","dong":"인창동","lat":37.6095899,"lng":127.1314868,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-045","no":45,"grade":"2급","name":"구리행복마을인창주공4단지아파트","address":"경기도 구리시 인창동 666-1","roadAddress":"경기도 구리시 건원대로76번길 134","naverName":"구리행복마을인창주공4단지아파트","naverPlaceId":"18158594","blocks":"18","floors":"지하1/지상20","dong":"인창동","lat":37.6079083,"lng":127.1430666,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-046","no":46,"grade":"2급","name":"구리인창동삼환신일5단지아파트","address":"경기도 구리시 인창동 667-1","roadAddress":"경기도 구리시 건원대로34번길 51","naverName":"구리인창동삼환신일5단지아파트","naverPlaceId":"18159694","blocks":"13","floors":"지하1/지상18","dong":"인창동","lat":37.6053426,"lng":127.1424215,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-047","no":47,"grade":"2급","name":"아름마을성원상떼빌","address":"경기도 구리시 인창동 528-2","roadAddress":"경기도 구리시 동구릉로53번길 87","naverName":"아름마을성원상떼빌","naverPlaceId":"18159573","blocks":"9","floors":"지하2/지상23","dong":"인창동","lat":37.6086979,"lng":127.1312616,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-048","no":48,"grade":"2급","name":"아름마을LG아파트","address":"경기도 구리시 인창동 640-1","roadAddress":"경기도 구리시 동구릉로53번길 67","naverName":"아름마을LG아파트","naverPlaceId":"17849376","blocks":"8","floors":"지하2/지상23","dong":"인창동","lat":37.6073716,"lng":127.1320905,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-049","no":49,"grade":"2급","name":"구리인창동삼보아파트","address":"경기도 구리시 인창동 665-1","roadAddress":"경기도 구리시 건원대로 56","naverName":"구리인창동삼보아파트","naverPlaceId":"18159264","blocks":"18","floors":"지하1/지상20","dong":"인창동","lat":37.6070573,"lng":127.1407154,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-050","no":50,"grade":"2급","name":"아름마을인창래미안아파트","address":"경기도 구리시 인창동 487-1","roadAddress":"경기도 구리시 동구릉로85번길 63","naverName":"아름마을인창래미안아파트","naverPlaceId":"18160037","blocks":"11","floors":"지하2/지상25","dong":"인창동","lat":37.6108324,"lng":127.1316969,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-051","no":51,"grade":"2급","name":"아름마을인창삼성래미안5단지아파트","address":"경기도 구리시 인창동 491-1","roadAddress":"경기도 구리시 동구릉로85번길 76","naverName":"아름마을인창삼성래미안5단지아파트","naverPlaceId":"18158091","blocks":"11","floors":"지하2/지상25","dong":"인창동","lat":37.6112294,"lng":127.1323933,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-052","no":52,"grade":"2급","name":"푸른마을인창주공1단지아파트","address":"경기도 구리시 인창동 663-1","roadAddress":"경기도 구리시 건원대로 92","naverName":"푸른마을인창주공1단지아파트","naverPlaceId":"18157666","blocks":"27","floors":"지하1/지상20","dong":"인창동","lat":37.6096272,"lng":127.1393482,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-053","no":53,"grade":"2급","name":"삼호아파트","address":"경기도 구리시 인창동 590","roadAddress":"경기도 구리시 응달말로40번길 13","naverName":"삼호아파트","naverPlaceId":"18159779","blocks":"2","floors":"지하1/지상15","dong":"인창동","lat":37.6035291,"lng":127.1361173,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-054","no":54,"grade":"2급","name":"인창LIG건영아파트","address":"경기도 구리시 인창동 474","roadAddress":"경기도 구리시 동구릉로 151","naverName":"인창LIG건영아파트","naverPlaceId":"18158962","blocks":"5","floors":"지하1/지상18","dong":"인창동","lat":37.6125144,"lng":127.1371502,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-055","no":55,"grade":"2급","name":"구리인창성원아파트","address":"경기도 구리시 인창동 453 성원아파트","roadAddress":"경기도 구리시 동구릉로129번길 24","naverName":"구리인창성원아파트","naverPlaceId":"18157663","blocks":"14","floors":"지하2/지상23","dong":"인창동","lat":37.6113336,"lng":127.1367991,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-056","no":56,"grade":"2급","name":"우방아이유쉘아파트","address":"경기도 구리시 인창동 480","roadAddress":"경기도 구리시 동구릉로159번길 30","naverName":"우방아이유쉘아파트","naverPlaceId":"18158947","blocks":"4","floors":"지하1/지상15","dong":"인창동","lat":37.6129751,"lng":127.1357458,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-057","no":57,"grade":"2급","name":"인창동동원베네스트아파트","address":"경기도 구리시 인창동 703","roadAddress":"경기도 구리시 동구릉로53번길 42","naverName":"인창동동원베네스트아파트","naverPlaceId":"18159733","blocks":"11","floors":"지하2/지상25","dong":"인창동","lat":37.6070839,"lng":127.1336272,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-058","no":58,"grade":"2급","name":"아름마을일신건영2차아파트","address":"경기도 구리시 인창동 487-51","roadAddress":"경기도 구리시 동구릉로85번길 52","naverName":"아름마을일신건영2차아파트","naverPlaceId":"18158868","blocks":"5","floors":"지하2/지상20","dong":"인창동","lat":37.6097221,"lng":127.1336248,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-059","no":59,"grade":"2급","name":"인창해모로아파트","address":"경기도 구리시 인창동 29","roadAddress":"경기도 구리시 동구릉로238번길 20","naverName":"인창해모로아파트","naverPlaceId":"18159683","blocks":"17","floors":"지하1/지상25","dong":"인창동","lat":37.6184338,"lng":127.142582,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-060","no":60,"grade":"2급","name":"구리인창동양아파트","address":"경기도 구리시 인창동 487","roadAddress":"경기도 구리시 동구릉로103번길 61","naverName":"구리인창동양아파트","naverPlaceId":"18157815","blocks":"14","floors":"지하2/지상25","dong":"인창동","lat":37.6116693,"lng":127.1341367,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-061","no":61,"grade":"2급","name":"아름마을일신건영1차아파트","address":"경기도 구리시 인창동 487-32","roadAddress":"경기도 구리시 동구릉로 93","naverName":"아름마을일신건영1차아파트","naverPlaceId":"18159193","blocks":"8","floors":"지하2/지상23","dong":"인창동","lat":37.6091812,"lng":127.1340793,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-062","no":62,"grade":"2급","name":"구리인창어울림아파트","address":"경기도 구리시 인창동 709","roadAddress":"경기도 구리시 동구릉로 226","naverName":"구리인창어울림아파트","naverPlaceId":"18158927","blocks":"10","floors":"지하1/지상15","dong":"인창동","lat":37.6188213,"lng":127.1402667,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-063","no":63,"grade":"2급","name":"다우림아파트","address":"경기도 구리시 인창동 704","roadAddress":"경기도 구리시 동구릉로53번길 103","naverName":"다우림아파트","naverPlaceId":"18158903","blocks":"5","floors":"지하1/지상14","dong":"인창동","lat":37.6089119,"lng":127.1304316,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-064","no":64,"grade":"2급","name":"구리인창현대홈타운아파트","address":"경기도 구리시 인창동 508","roadAddress":"경기도 구리시 동구릉로 114","naverName":"구리인창현대홈타운아파트","naverPlaceId":"18159978","blocks":"9","floors":"지하2/지상25","dong":"인창동","lat":37.6088073,"lng":127.1370301,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-065","no":65,"grade":"2급","name":"구리인창동풍림아이원","address":"경기도 구리시 인창동 712","roadAddress":"경기도 구리시 동구릉로159번길 8","naverName":"구리인창동풍림아이원","naverPlaceId":"34044219","blocks":"6","floors":"지하2/지상15","dong":"인창동","lat":37.6132405,"lng":127.1371504,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-066","no":66,"grade":"2급","name":"구리더샵그린포레","address":"경기도 구리시 인창동 713","roadAddress":"경기도 구리시 인창2로 13","naverName":"구리더샵그린포레","naverPlaceId":"36631459","blocks":"14","floors":"지하3/지상20","dong":"인창동","lat":37.6034166,"lng":127.1303677,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-067","no":67,"grade":"2급","name":"동문굿모닝힐1차아파트","address":"경기도 구리시 인창동 707","roadAddress":"경기도 구리시 건원대로99번길 112","naverName":"동문굿모닝힐1차아파트","naverPlaceId":"18158229","blocks":"12","floors":"지하3/지상24","dong":"인창동","lat":37.6056087,"lng":127.1385064,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-068","no":68,"grade":"2급","name":"인창2차동문굿모닝힐아파트","address":"경기도 구리시 인창동 706","roadAddress":"경기도 구리시 동구릉로53번길 17","naverName":"인창2차동문굿모닝힐아파트","naverPlaceId":"18157639","blocks":"8","floors":"지하2/지상17","dong":"인창동","lat":37.6054663,"lng":127.1331191,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-069","no":69,"grade":"2급","name":"구리클레시움더테라스하우스","address":"경기도 구리시 인창동 715","roadAddress":"경기도 구리시 동구릉로200번길 90","naverName":"구리클레시움더테라스하우스","naverPlaceId":"1808557102","blocks":"7","floors":"지하1/지상5","dong":"인창동","lat":37.6173173,"lng":127.1423963,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-070","no":70,"grade":"2급","name":"구리인창e편한세상2차아파트","address":"경기도 구리시 인창동 705","roadAddress":"경기도 구리시 동구릉로129번길 23","naverName":"구리인창e편한세상2차아파트","naverPlaceId":"18160041","blocks":"20","floors":"지하4/지상25","dong":"인창동","lat":37.6104819,"lng":127.1354329,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-071","no":71,"grade":"2급","name":"구리더샵그린포레2단지","address":"경기도 구리시 인창동 714","roadAddress":"경기도 구리시 인창2로 3","naverName":"구리더샵그린포레2단지","naverPlaceId":"35575679","blocks":"5","floors":"지하3/지상20","dong":"인창동","lat":37.601886,"lng":127.1296449,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-072","no":72,"grade":"2급","name":"채움더힐","address":"경기도 구리시 인창동 616-4","roadAddress":"경기도 구리시 인창2로 5-2","naverName":"채움더힐","naverPlaceId":"1679960365","blocks":"5","floors":"지하1/지상6","dong":"인창동","lat":37.6024537,"lng":127.1296531,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-073","no":73,"grade":"2급","name":"e편한세상인창어반포레","address":"경기도 구리시 인창동 716","roadAddress":"경기도 구리시 건원대로33번길 9","naverName":"e편한세상인창어반포레","naverPlaceId":"1078436689","blocks":"10","floors":"지하2/지상25","dong":"인창동","lat":37.6032393,"lng":127.1385491,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-074","no":74,"grade":"2급","name":"인창칸타빌더헤리티지아파트","address":"경기도 구리시 인창동 636","roadAddress":"경기도 구리시 인창1로 39-9 인창칸타빌더헤리티지","naverName":"인창칸타빌더헤리티지아파트","naverPlaceId":"1255863639","blocks":"7","floors":"지하2/지상25","dong":"인창동","lat":37.6062498,"lng":127.1312168,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-075","no":75,"grade":"2급","name":"구리갈매한라비발디","address":"경기도 구리시 갈매동 590","roadAddress":"경기도 구리시 갈매중앙로 131","naverName":"구리갈매한라비발디","naverPlaceId":"37438553","blocks":"17","floors":"지하2/지상29","dong":"갈매동","lat":37.6364904,"lng":127.1189648,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-076","no":76,"grade":"1급","name":"갈매더샵나인힐스아파트","address":"경기도 구리시 갈매동 665","roadAddress":"경기도 구리시 갈매순환로 10","naverName":"갈매더샵나인힐스아파트","naverPlaceId":"34827700","blocks":"11","floors":"지하2/지상25","dong":"갈매동","lat":37.6243269,"lng":127.1115108,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-077","no":77,"grade":"2급","name":"갈매스타힐스아파트","address":"경기도 구리시 갈매동 651","roadAddress":"경기도 구리시 산마루로 46","naverName":"갈매스타힐스아파트","naverPlaceId":"37892217","blocks":"25","floors":"지하1/지상28","dong":"갈매동","lat":37.6290625,"lng":127.1184061,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-078","no":78,"grade":"2급","name":"구리갈매푸르지오아파트","address":"경기도 구리시 갈매동 640","roadAddress":"경기도 구리시 갈매중앙로 16","naverName":"구리갈매푸르지오아파트","naverPlaceId":"36667504","blocks":"25","floors":"지하2/지상25","dong":"갈매동","lat":37.6263396,"lng":127.1154882,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-079","no":79,"grade":"2급","name":"갈매역아이파크아파트","address":"경기도 구리시 갈매동 596","roadAddress":"경기도 구리시 경춘북로 252","naverName":"갈매역아이파크아파트","naverPlaceId":"37073053","blocks":"13","floors":"지하2/지상29","dong":"갈매동","lat":37.6346002,"lng":127.1170208,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-080","no":80,"grade":"2급","name":"구리갈매1단지아파트","address":"경기도 구리시 갈매동 573","roadAddress":"경기도 구리시 갈매순환로 143","naverName":"구리갈매1단지아파트","naverPlaceId":"38003825","blocks":"18","floors":"지하1/지상24","dong":"갈매동","lat":37.6332363,"lng":127.1200297,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-081","no":81,"grade":"2급","name":"갈매와이시티","address":"경기도 구리시 갈매동 626","roadAddress":"경기도 구리시 갈매중앙로 45","naverName":"갈매와이시티","naverPlaceId":"38282425","blocks":"15","floors":"지하1/지상25","dong":"갈매동","lat":37.6289627,"lng":127.1142238,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-082","no":82,"grade":"2급","name":"구리갈매이스트힐2단지아파트","address":"경기도 구리시 갈매동 569","roadAddress":"경기도 구리시 갈매중앙로 132","naverName":"구리갈매이스트힐2단지아파트","naverPlaceId":"38003826","blocks":"17","floors":"지하2/지상29","dong":"갈매동","lat":37.6343373,"lng":127.121482,"coordStatus":"naver-verified","facilities":[]},{"id":"APT-083","no":83,"grade":"2급","name":"구리갈매6단지아파트","address":"경기도 구리시 갈매동 631","roadAddress":"경기도 구리시 갈매중앙로 25","naverName":"구리갈매6단지아파트","naverPlaceId":"38291564","blocks":"12","floors":"지하1/지상27","dong":"갈매동","lat":37.6274477,"lng":127.1131269,"coordStatus":"naver-verified","facilities":[]}];
+    const streetStyle={"version":8,"sources":{"ne2_shaded":{"maxzoom":6,"tileSize":256,"tiles":["https://tiles.openfreemap.org/natural_earth/ne2sr/{z}/{x}/{y}.png"],"type":"raster"},"openmaptiles":{"type":"vector","tiles":["https://tiles.openfreemap.org/planet/20260913_164504_pt/{z}/{x}/{y}.pbf"],"minzoom":0,"maxzoom":14,"attribution":"<a href=\"https://openfreemap.org\" target=\"_blank\">OpenFreeMap</a> <a href=\"https://www.openmaptiles.org/\" target=\"_blank\">&copy; OpenMapTiles</a> Data from <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">OpenStreetMap</a>"}},"sprite":"https://tiles.openfreemap.org/sprites/ofm_f384/ofm","glyphs":"https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf","layers":[{"id":"background","type":"background","paint":{"background-color":"#f8f4f0"}},{"id":"natural_earth","type":"raster","source":"ne2_shaded","maxzoom":7,"paint":{"raster-opacity":["interpolate",["exponential",1.5],["zoom"],0,0.6,6,0.1]}},{"id":"park","type":"fill","source":"openmaptiles","source-layer":"park","paint":{"fill-color":"#d8e8c8","fill-opacity":0.7,"fill-outline-color":"rgba(95, 208, 100, 1)"}},{"id":"park_outline","type":"line","source":"openmaptiles","source-layer":"park","paint":{"line-color":"rgba(228, 241, 215, 1)","line-dasharray":[1,1.5]}},{"id":"landuse_residential","type":"fill","source":"openmaptiles","source-layer":"landuse","maxzoom":12,"filter":["==",["get","class"],"residential"],"paint":{"fill-color":["interpolate",["linear"],["zoom"],9,"hsla(0,3%,85%,0.84)",12,"hsla(35,57%,88%,0.49)"]}},{"id":"landcover_wood","type":"fill","source":"openmaptiles","source-layer":"landcover","filter":["==",["get","class"],"wood"],"paint":{"fill-antialias":false,"fill-color":"hsla(98,61%,72%,0.7)","fill-opacity":0.4}},{"id":"landcover_grass","type":"fill","source":"openmaptiles","source-layer":"landcover","filter":["==",["get","class"],"grass"],"paint":{"fill-antialias":false,"fill-color":"rgba(176, 213, 154, 1)","fill-opacity":0.3}},{"id":"landcover_ice","type":"fill","source":"openmaptiles","source-layer":"landcover","filter":["==",["get","class"],"ice"],"paint":{"fill-antialias":false,"fill-color":"rgba(224, 236, 236, 1)","fill-opacity":0.8}},{"id":"landcover_wetland","type":"fill","source":"openmaptiles","source-layer":"landcover","minzoom":12,"filter":["==",["get","class"],"wetland"],"paint":{"fill-antialias":true,"fill-opacity":0.8,"fill-pattern":"wetland_bg_11","fill-translate-anchor":"map"}},{"id":"landuse_pitch","type":"fill","source":"openmaptiles","source-layer":"landuse","filter":["==",["get","class"],"pitch"],"paint":{"fill-color":"#DEE3CD"}},{"id":"landuse_track","type":"fill","source":"openmaptiles","source-layer":"landuse","filter":["==",["get","class"],"track"],"paint":{"fill-color":"#DEE3CD"}},{"id":"landuse_cemetery","type":"fill","source":"openmaptiles","source-layer":"landuse","filter":["==",["get","class"],"cemetery"],"paint":{"fill-color":"hsl(75,37%,81%)"}},{"id":"landuse_hospital","type":"fill","source":"openmaptiles","source-layer":"landuse","filter":["==",["get","class"],"hospital"],"paint":{"fill-color":"#fde"}},{"id":"landuse_school","type":"fill","source":"openmaptiles","source-layer":"landuse","filter":["==",["get","class"],"school"],"paint":{"fill-color":"rgb(236,238,204)"}},{"id":"waterway_tunnel","type":"line","source":"openmaptiles","source-layer":"waterway","filter":["==",["get","brunnel"],"tunnel"],"paint":{"line-color":"#a0c8f0","line-dasharray":[3,3],"line-gap-width":["interpolate",["linear"],["zoom"],12,0,20,6],"line-opacity":1,"line-width":["interpolate",["exponential",1.4],["zoom"],8,1,20,2]}},{"id":"waterway_river","type":"line","source":"openmaptiles","source-layer":"waterway","filter":["all",["==",["get","class"],"river"],["!=",["get","brunnel"],"tunnel"]],"layout":{"line-cap":"round"},"paint":{"line-color":"#a0c8f0","line-width":["interpolate",["exponential",1.2],["zoom"],11,0.5,20,6]}},{"id":"waterway_other","type":"line","source":"openmaptiles","source-layer":"waterway","filter":["all",["!=",["get","class"],"river"],["!=",["get","brunnel"],"tunnel"]],"layout":{"line-cap":"round"},"paint":{"line-color":"#a0c8f0","line-width":["interpolate",["exponential",1.3],["zoom"],13,0.5,20,6]}},{"id":"water","type":"fill","source":"openmaptiles","source-layer":"water","filter":["!=",["get","brunnel"],"tunnel"],"paint":{"fill-color":"rgb(158,189,255)"}},{"id":"landcover_sand","type":"fill","source":"openmaptiles","source-layer":"landcover","filter":["==",["get","class"],"sand"],"paint":{"fill-color":"rgba(247, 239, 195, 1)"}},{"id":"aeroway_fill","type":"fill","source":"openmaptiles","source-layer":"aeroway","minzoom":11,"filter":["match",["geometry-type"],["MultiPolygon","Polygon"],true,false],"paint":{"fill-color":"rgba(229, 228, 224, 1)","fill-opacity":0.7}},{"id":"aeroway_runway","type":"line","source":"openmaptiles","source-layer":"aeroway","minzoom":11,"filter":["all",["match",["geometry-type"],["LineString","MultiLineString"],true,false],["==",["get","class"],"runway"]],"paint":{"line-color":"#f0ede9","line-width":["interpolate",["exponential",1.2],["zoom"],11,3,20,16]}},{"id":"aeroway_taxiway","type":"line","source":"openmaptiles","source-layer":"aeroway","minzoom":11,"filter":["all",["match",["geometry-type"],["LineString","MultiLineString"],true,false],["==",["get","class"],"taxiway"]],"paint":{"line-color":"#f0ede9","line-width":["interpolate",["exponential",1.2],["zoom"],11,0.5,20,6]}},{"id":"tunnel_motorway_link_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"motorway"],["==",["get","ramp"],1],["==",["get","brunnel"],"tunnel"]],"layout":{"line-join":"round"},"paint":{"line-color":"#e9ac77","line-dasharray":[0.5,0.25],"line-width":["interpolate",["exponential",1.2],["zoom"],12,1,13,3,14,4,20,15]}},{"id":"tunnel_service_track_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"tunnel"],["match",["get","class"],["service","track"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#cfcdca","line-dasharray":[0.5,0.25],"line-width":["interpolate",["exponential",1.2],["zoom"],15,1,16,4,20,11]}},{"id":"tunnel_link_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","ramp"],1],["==",["get","brunnel"],"tunnel"]],"layout":{"line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],12,1,13,3,14,4,20,15]}},{"id":"tunnel_street_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"tunnel"],["match",["get","class"],["street","street_limited"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#cfcdca","line-opacity":["interpolate",["linear"],["zoom"],12,0,12.5,1],"line-width":["interpolate",["exponential",1.2],["zoom"],12,0.5,13,1,14,4,20,15]}},{"id":"tunnel_secondary_tertiary_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"tunnel"],["match",["get","class"],["secondary","tertiary"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],8,1.5,20,17]}},{"id":"tunnel_trunk_primary_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"tunnel"],["match",["get","class"],["primary","trunk"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],5,0.4,6,0.7,7,1.75,20,22]}},{"id":"tunnel_motorway_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"motorway"],["!=",["get","ramp"],1],["==",["get","brunnel"],"tunnel"]],"layout":{"line-join":"round"},"paint":{"line-color":"#e9ac77","line-dasharray":[0.5,0.25],"line-width":["interpolate",["exponential",1.2],["zoom"],5,0.4,6,0.7,7,1.75,20,22]}},{"id":"tunnel_path_pedestrian","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["geometry-type"],["LineString","MultiLineString"],true,false],["==",["get","brunnel"],"tunnel"],["match",["get","class"],["path","pedestrian"],true,false]],"paint":{"line-color":"hsl(0,0%,100%)","line-dasharray":[1,0.75],"line-width":["interpolate",["exponential",1.2],["zoom"],14,0.5,20,10]}},{"id":"tunnel_motorway_link","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"motorway"],["==",["get","ramp"],1],["==",["get","brunnel"],"tunnel"]],"layout":{"line-join":"round"},"paint":{"line-color":"#fc8","line-width":["interpolate",["exponential",1.2],["zoom"],12.5,0,13,1.5,14,2.5,20,11.5]}},{"id":"tunnel_service_track","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"tunnel"],["match",["get","class"],["service","track"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#fff","line-width":["interpolate",["exponential",1.2],["zoom"],15.5,0,16,2,20,7.5]}},{"id":"tunnel_link","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","ramp"],1],["==",["get","brunnel"],"tunnel"]],"layout":{"line-join":"round"},"paint":{"line-color":"#fff4c6","line-width":["interpolate",["exponential",1.2],["zoom"],12.5,0,13,1.5,14,2.5,20,11.5]}},{"id":"tunnel_minor","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"tunnel"],["match",["get","class"],["minor"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#fff","line-width":["interpolate",["exponential",1.2],["zoom"],13.5,0,14,2.5,20,11.5]}},{"id":"tunnel_secondary_tertiary","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"tunnel"],["match",["get","class"],["secondary","tertiary"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#fff4c6","line-width":["interpolate",["exponential",1.2],["zoom"],6.5,0,7,0.5,20,10]}},{"id":"tunnel_trunk_primary","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"tunnel"],["match",["get","class"],["primary","trunk"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#fff4c6","line-width":["interpolate",["exponential",1.2],["zoom"],5,0,7,1,20,18]}},{"id":"tunnel_motorway","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"motorway"],["!=",["get","ramp"],1],["==",["get","brunnel"],"tunnel"]],"layout":{"line-join":"round"},"paint":{"line-color":"#ffdaa6","line-width":["interpolate",["exponential",1.2],["zoom"],5,0,7,1,20,18]}},{"id":"tunnel_major_rail","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"tunnel"],["match",["get","class"],["rail"],true,false]],"paint":{"line-color":"#bbb","line-width":["interpolate",["exponential",1.4],["zoom"],14,0.4,15,0.75,20,2]}},{"id":"tunnel_major_rail_hatching","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"tunnel"],["==",["get","class"],"rail"]],"paint":{"line-color":"#bbb","line-dasharray":[0.2,8],"line-width":["interpolate",["exponential",1.4],["zoom"],14.5,0,15,3,20,8]}},{"id":"tunnel_transit_rail","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"tunnel"],["match",["get","class"],["transit"],true,false]],"paint":{"line-color":"#bbb","line-width":["interpolate",["exponential",1.4],["zoom"],14,0.4,15,0.75,20,2]}},{"id":"tunnel_transit_rail_hatching","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"tunnel"],["==",["get","class"],"transit"]],"paint":{"line-color":"#bbb","line-dasharray":[0.2,8],"line-width":["interpolate",["exponential",1.4],["zoom"],14.5,0,15,3,20,8]}},{"id":"road_area_pattern","type":"fill","source":"openmaptiles","source-layer":"transportation","filter":["match",["geometry-type"],["MultiPolygon","Polygon"],true,false],"paint":{"fill-pattern":"pedestrian_polygon"}},{"id":"road_motorway_link_casing","type":"line","source":"openmaptiles","source-layer":"transportation","minzoom":12,"filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["==",["get","class"],"motorway"],["==",["get","ramp"],1]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],12,1,13,3,14,4,20,15]}},{"id":"road_service_track_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["match",["get","class"],["service","track"],true,false]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":"#cfcdca","line-width":["interpolate",["exponential",1.2],["zoom"],15,1,16,4,20,11]}},{"id":"road_link_casing","type":"line","source":"openmaptiles","source-layer":"transportation","minzoom":13,"filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["match",["get","class"],["motorway","path","pedestrian","service","track"],false,true],["==",["get","ramp"],1]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],12,1,13,3,14,4,20,15]}},{"id":"road_minor_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["geometry-type"],["LineString","MultiLineString"],true,false],["match",["get","brunnel"],["bridge","tunnel"],false,true],["match",["get","class"],["minor"],true,false],["!=",["get","ramp"],1]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":"#cfcdca","line-opacity":["interpolate",["linear"],["zoom"],12,0,12.5,1],"line-width":["interpolate",["exponential",1.2],["zoom"],12,0.5,13,1,14,4,20,20]}},{"id":"road_secondary_tertiary_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["match",["get","class"],["secondary","tertiary"],true,false],["!=",["get","ramp"],1]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],8,1.5,20,17]}},{"id":"road_trunk_primary_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["match",["get","class"],["primary","trunk"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],5,0.4,6,0.7,7,1.75,20,22]}},{"id":"road_motorway_casing","type":"line","source":"openmaptiles","source-layer":"transportation","minzoom":5,"filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["==",["get","class"],"motorway"],["!=",["get","ramp"],1]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],5,0.4,6,0.7,7,1.75,20,22]}},{"id":"road_path_pedestrian","type":"line","source":"openmaptiles","source-layer":"transportation","minzoom":14,"filter":["all",["match",["geometry-type"],["LineString","MultiLineString"],true,false],["match",["get","brunnel"],["bridge","tunnel"],false,true],["match",["get","class"],["path","pedestrian"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"hsl(0,0%,100%)","line-dasharray":[1,0.7],"line-width":["interpolate",["exponential",1.2],["zoom"],14,1,20,10]}},{"id":"road_motorway_link","type":"line","source":"openmaptiles","source-layer":"transportation","minzoom":12,"filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["==",["get","class"],"motorway"],["==",["get","ramp"],1]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":"#fc8","line-width":["interpolate",["exponential",1.2],["zoom"],12.5,0,13,1.5,14,2.5,20,11.5]}},{"id":"road_service_track","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["match",["get","class"],["service","track"],true,false]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":"#fff","line-width":["interpolate",["exponential",1.2],["zoom"],15.5,0,16,2,20,7.5]}},{"id":"road_link","type":"line","source":"openmaptiles","source-layer":"transportation","minzoom":13,"filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["==",["get","ramp"],1],["match",["get","class"],["motorway","path","pedestrian","service","track"],false,true]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":"#fea","line-width":["interpolate",["exponential",1.2],["zoom"],12.5,0,13,1.5,14,2.5,20,11.5]}},{"id":"road_minor","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["geometry-type"],["LineString","MultiLineString"],true,false],["match",["get","brunnel"],["bridge","tunnel"],false,true],["match",["get","class"],["minor"],true,false]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":"#fff","line-width":["interpolate",["exponential",1.2],["zoom"],13.5,0,14,2.5,20,18]}},{"id":"road_secondary_tertiary","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["match",["get","class"],["secondary","tertiary"],true,false]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":"#fea","line-width":["interpolate",["exponential",1.2],["zoom"],6.5,0,8,0.5,20,13]}},{"id":"road_trunk_primary","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["match",["get","class"],["primary","trunk"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#fea","line-width":["interpolate",["exponential",1.2],["zoom"],5,0,7,1,20,18]}},{"id":"road_motorway","type":"line","source":"openmaptiles","source-layer":"transportation","minzoom":5,"filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["==",["get","class"],"motorway"],["!=",["get","ramp"],1]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":["interpolate",["linear"],["zoom"],5,"hsl(26,87%,62%)",6,"#fc8"],"line-width":["interpolate",["exponential",1.2],["zoom"],5,0,7,1,20,18]}},{"id":"road_major_rail","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["==",["get","class"],"rail"]],"paint":{"line-color":"#bbb","line-width":["interpolate",["exponential",1.4],["zoom"],14,0.4,15,0.75,20,2]}},{"id":"road_major_rail_hatching","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["==",["get","class"],"rail"]],"paint":{"line-color":"#bbb","line-dasharray":[0.2,8],"line-width":["interpolate",["exponential",1.4],["zoom"],14.5,0,15,3,20,8]}},{"id":"road_transit_rail","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["==",["get","class"],"transit"]],"paint":{"line-color":"#bbb","line-width":["interpolate",["exponential",1.4],["zoom"],14,0.4,15,0.75,20,2]}},{"id":"road_transit_rail_hatching","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["get","brunnel"],["bridge","tunnel"],false,true],["==",["get","class"],"transit"]],"paint":{"line-color":"#bbb","line-dasharray":[0.2,8],"line-width":["interpolate",["exponential",1.4],["zoom"],14.5,0,15,3,20,8]}},{"id":"road_one_way_arrow","type":"symbol","source":"openmaptiles","source-layer":"transportation","minzoom":16,"filter":["==",["get","oneway"],1],"layout":{"icon-image":"arrow","symbol-placement":"line"}},{"id":"road_one_way_arrow_opposite","type":"symbol","source":"openmaptiles","source-layer":"transportation","minzoom":16,"filter":["==",["get","oneway"],-1],"layout":{"icon-image":"arrow","icon-rotate":180,"symbol-placement":"line"}},{"id":"bridge_motorway_link_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"motorway"],["==",["get","ramp"],1],["==",["get","brunnel"],"bridge"]],"layout":{"line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],12,1,13,3,14,4,20,15]}},{"id":"bridge_service_track_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"bridge"],["match",["get","class"],["service","track"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#cfcdca","line-width":["interpolate",["exponential",1.2],["zoom"],15,1,16,4,20,11]}},{"id":"bridge_link_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"link"],["==",["get","brunnel"],"bridge"]],"layout":{"line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],12,1,13,3,14,4,20,15]}},{"id":"bridge_street_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"bridge"],["match",["get","class"],["street","street_limited"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"hsl(36,6%,74%)","line-opacity":["interpolate",["linear"],["zoom"],12,0,12.5,1],"line-width":["interpolate",["exponential",1.2],["zoom"],12,0.5,13,1,14,4,20,25]}},{"id":"bridge_path_pedestrian_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["geometry-type"],["LineString","MultiLineString"],true,false],["==",["get","brunnel"],"bridge"],["match",["get","class"],["path","pedestrian"],true,false]],"paint":{"line-color":"hsl(35,6%,80%)","line-dasharray":[1,0],"line-width":["interpolate",["exponential",1.2],["zoom"],14,1.5,20,18]}},{"id":"bridge_secondary_tertiary_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"bridge"],["match",["get","class"],["secondary","tertiary"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],8,1.5,20,17]}},{"id":"bridge_trunk_primary_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"bridge"],["match",["get","class"],["primary","trunk"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],5,0.4,6,0.7,7,1.75,20,22]}},{"id":"bridge_motorway_casing","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"motorway"],["!=",["get","ramp"],1],["==",["get","brunnel"],"bridge"]],"layout":{"line-join":"round"},"paint":{"line-color":"#e9ac77","line-width":["interpolate",["exponential",1.2],["zoom"],5,0.4,6,0.7,7,1.75,20,22]}},{"id":"bridge_path_pedestrian","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["match",["geometry-type"],["LineString","MultiLineString"],true,false],["==",["get","brunnel"],"bridge"],["match",["get","class"],["path","pedestrian"],true,false]],"paint":{"line-color":"hsl(0,0%,100%)","line-dasharray":[1,0.3],"line-width":["interpolate",["exponential",1.2],["zoom"],14,0.5,20,10]}},{"id":"bridge_motorway_link","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"motorway"],["==",["get","ramp"],1],["==",["get","brunnel"],"bridge"]],"layout":{"line-join":"round"},"paint":{"line-color":"#fc8","line-width":["interpolate",["exponential",1.2],["zoom"],12.5,0,13,1.5,14,2.5,20,11.5]}},{"id":"bridge_service_track","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"bridge"],["match",["get","class"],["service","track"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#fff","line-width":["interpolate",["exponential",1.2],["zoom"],15.5,0,16,2,20,7.5]}},{"id":"bridge_link","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"link"],["==",["get","brunnel"],"bridge"]],"layout":{"line-join":"round"},"paint":{"line-color":"#fea","line-width":["interpolate",["exponential",1.2],["zoom"],12.5,0,13,1.5,14,2.5,20,11.5]}},{"id":"bridge_street","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"bridge"],["match",["get","class"],["minor"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#fff","line-width":["interpolate",["exponential",1.2],["zoom"],13.5,0,14,2.5,20,18]}},{"id":"bridge_secondary_tertiary","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"bridge"],["match",["get","class"],["secondary","tertiary"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#fea","line-width":["interpolate",["exponential",1.2],["zoom"],6.5,0,7,0.5,20,10]}},{"id":"bridge_trunk_primary","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","brunnel"],"bridge"],["match",["get","class"],["primary","trunk"],true,false]],"layout":{"line-join":"round"},"paint":{"line-color":"#fea","line-width":["interpolate",["exponential",1.2],["zoom"],5,0,7,1,20,18]}},{"id":"bridge_motorway","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"motorway"],["!=",["get","ramp"],1],["==",["get","brunnel"],"bridge"]],"layout":{"line-join":"round"},"paint":{"line-color":"#fc8","line-width":["interpolate",["exponential",1.2],["zoom"],5,0,7,1,20,18]}},{"id":"bridge_major_rail","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"rail"],["==",["get","brunnel"],"bridge"]],"paint":{"line-color":"#bbb","line-width":["interpolate",["exponential",1.4],["zoom"],14,0.4,15,0.75,20,2]}},{"id":"bridge_major_rail_hatching","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"rail"],["==",["get","brunnel"],"bridge"]],"paint":{"line-color":"#bbb","line-dasharray":[0.2,8],"line-width":["interpolate",["exponential",1.4],["zoom"],14.5,0,15,3,20,8]}},{"id":"bridge_transit_rail","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"transit"],["==",["get","brunnel"],"bridge"]],"paint":{"line-color":"#bbb","line-width":["interpolate",["exponential",1.4],["zoom"],14,0.4,15,0.75,20,2]}},{"id":"bridge_transit_rail_hatching","type":"line","source":"openmaptiles","source-layer":"transportation","filter":["all",["==",["get","class"],"transit"],["==",["get","brunnel"],"bridge"]],"paint":{"line-color":"#bbb","line-dasharray":[0.2,8],"line-width":["interpolate",["exponential",1.4],["zoom"],14.5,0,15,3,20,8]}},{"id":"building","type":"fill","source":"openmaptiles","source-layer":"building","minzoom":13,"maxzoom":14,"paint":{"fill-color":"hsl(35,8%,85%)","fill-outline-color":["interpolate",["linear"],["zoom"],13,"hsla(35,6%,79%,0.32)",14,"hsl(35,6%,79%)"]}},{"id":"building-3d","type":"fill-extrusion","source":"openmaptiles","source-layer":"building","minzoom":14,"paint":{"fill-extrusion-base":["get","render_min_height"],"fill-extrusion-color":"hsl(35,8%,85%)","fill-extrusion-height":["get","render_height"],"fill-extrusion-opacity":0.8}},{"id":"boundary_3","type":"line","source":"openmaptiles","source-layer":"boundary","minzoom":5,"filter":["all",[">=",["get","admin_level"],3],["<=",["get","admin_level"],6],["!=",["get","maritime"],1],["!=",["get","disputed"],1],["!",["has","claimed_by"]]],"paint":{"line-color":"hsl(0,0%,70%)","line-dasharray":[1,1],"line-width":["interpolate",["linear",1],["zoom"],7,1,11,2]}},{"id":"boundary_2","type":"line","source":"openmaptiles","source-layer":"boundary","filter":["all",["==",["get","admin_level"],2],["!=",["get","maritime"],1],["!=",["get","disputed"],1],["!",["has","claimed_by"]]],"layout":{"line-cap":"round","line-join":"round"},"paint":{"line-color":"hsl(248,1%,41%)","line-opacity":["interpolate",["linear"],["zoom"],0,0.4,4,1],"line-width":["interpolate",["linear"],["zoom"],3,1,5,1.2,12,3]}},{"id":"boundary_disputed","type":"line","source":"openmaptiles","source-layer":"boundary","filter":["all",["!=",["get","maritime"],1],["==",["get","disputed"],1]],"paint":{"line-color":"hsl(248,1%,41%)","line-dasharray":[1,2],"line-width":["interpolate",["linear"],["zoom"],3,1,5,1.2,12,3]}},{"id":"waterway_line_label","type":"symbol","source":"openmaptiles","source-layer":"waterway","minzoom":10,"filter":["match",["geometry-type"],["LineString","MultiLineString"],true,false],"layout":{"symbol-placement":"line","symbol-spacing":350,"text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"]," ",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Italic"],"text-letter-spacing":0.2,"text-max-width":5,"text-size":14},"paint":{"text-color":"#74aee9","text-halo-color":"rgba(255,255,255,0.7)","text-halo-width":1.5}},{"id":"water_name_point_label","type":"symbol","source":"openmaptiles","source-layer":"water_name","filter":["match",["geometry-type"],["MultiPoint","Point"],true,false],"layout":{"text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Italic"],"text-letter-spacing":0.2,"text-max-width":5,"text-size":["interpolate",["linear"],["zoom"],0,10,8,14]},"paint":{"text-color":"#495e91","text-halo-color":"rgba(255,255,255,0.7)","text-halo-width":1.5}},{"id":"water_name_line_label","type":"symbol","source":"openmaptiles","source-layer":"water_name","filter":["match",["geometry-type"],["LineString","MultiLineString"],true,false],"layout":{"symbol-placement":"line","symbol-spacing":350,"text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"]," ",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Italic"],"text-letter-spacing":0.2,"text-max-width":5,"text-size":14},"paint":{"text-color":"#495e91","text-halo-color":"rgba(255,255,255,0.7)","text-halo-width":1.5}},{"id":"poi_r20","type":"symbol","source":"openmaptiles","source-layer":"poi","minzoom":17,"filter":["all",["match",["geometry-type"],["MultiPoint","Point"],true,false],[">=",["get","rank"],20]],"layout":{"icon-image":["match",["get","subclass"],["florist","furniture"],["get","subclass"],["get","class"]],"text-anchor":"top","text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Italic"],"text-max-width":9,"text-offset":[0,0.6],"text-size":12},"paint":{"text-color":"#666","text-halo-blur":0.5,"text-halo-color":"#ffffff","text-halo-width":1}},{"id":"poi_r7","type":"symbol","source":"openmaptiles","source-layer":"poi","minzoom":16,"filter":["all",["match",["geometry-type"],["MultiPoint","Point"],true,false],[">=",["get","rank"],7],["<",["get","rank"],20]],"layout":{"icon-image":["match",["get","subclass"],["florist","furniture"],["get","subclass"],["get","class"]],"text-anchor":"top","text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Italic"],"text-max-width":9,"text-offset":[0,0.6],"text-size":12},"paint":{"text-color":"#666","text-halo-blur":0.5,"text-halo-color":"#ffffff","text-halo-width":1}},{"id":"poi_r1","type":"symbol","source":"openmaptiles","source-layer":"poi","minzoom":15,"filter":["all",["match",["geometry-type"],["MultiPoint","Point"],true,false],[">=",["get","rank"],1],["<",["get","rank"],7]],"layout":{"icon-image":["match",["get","subclass"],["florist","furniture"],["get","subclass"],["get","class"]],"text-anchor":"top","text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Italic"],"text-max-width":9,"text-offset":[0,0.6],"text-size":12},"paint":{"text-color":"#666","text-halo-blur":0.5,"text-halo-color":"#ffffff","text-halo-width":1}},{"id":"poi_transit","type":"symbol","source":"openmaptiles","source-layer":"poi","filter":["match",["get","class"],["airport","bus","rail"],true,false],"layout":{"icon-image":["to-string",["get","class"]],"icon-size":0.7,"text-anchor":"left","text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Italic"],"text-max-width":9,"text-offset":[0.9,0],"text-size":12},"paint":{"text-color":"#2e5a80","text-halo-blur":0.5,"text-halo-color":"#ffffff","text-halo-width":1}},{"id":"highway-name-path","type":"symbol","source":"openmaptiles","source-layer":"transportation_name","minzoom":15.5,"filter":["==",["get","class"],"path"],"layout":{"symbol-placement":"line","text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"]," ",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Regular"],"text-rotation-alignment":"map","text-size":["interpolate",["linear"],["zoom"],13,12,14,13]},"paint":{"text-color":"hsl(30,23%,62%)","text-halo-color":"#f8f4f0","text-halo-width":0.5}},{"id":"highway-name-minor","type":"symbol","source":"openmaptiles","source-layer":"transportation_name","minzoom":15,"filter":["all",["match",["geometry-type"],["LineString","MultiLineString"],true,false],["match",["get","class"],["minor","service","track"],true,false]],"layout":{"symbol-placement":"line","text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"]," ",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Regular"],"text-rotation-alignment":"map","text-size":["interpolate",["linear"],["zoom"],13,12,14,13]},"paint":{"text-color":"#666","text-halo-blur":0.5,"text-halo-width":1}},{"id":"highway-name-major","type":"symbol","source":"openmaptiles","source-layer":"transportation_name","minzoom":12.2,"filter":["match",["get","class"],["primary","secondary","tertiary","trunk"],true,false],"layout":{"symbol-placement":"line","text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"]," ",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Regular"],"text-rotation-alignment":"map","text-size":["interpolate",["linear"],["zoom"],13,12,14,13]},"paint":{"text-color":"#666","text-halo-blur":0.5,"text-halo-width":1}},{"id":"highway-shield-non-us","type":"symbol","source":"openmaptiles","source-layer":"transportation_name","minzoom":8,"filter":["all",["<=",["get","ref_length"],6],["match",["geometry-type"],["LineString","MultiLineString"],true,false],["match",["get","network"],["us-highway","us-interstate","us-state"],false,true]],"layout":{"icon-image":["concat","road_",["get","ref_length"]],"icon-rotation-alignment":"viewport","icon-size":1,"symbol-placement":["step",["zoom"],"point",11,"line"],"symbol-spacing":200,"text-field":["to-string",["get","ref"]],"text-font":["Noto Sans Regular"],"text-rotation-alignment":"viewport","text-size":10}},{"id":"highway-shield-us-interstate","type":"symbol","source":"openmaptiles","source-layer":"transportation_name","minzoom":7,"filter":["all",["<=",["get","ref_length"],6],["match",["geometry-type"],["LineString","MultiLineString"],true,false],["match",["get","network"],["us-interstate"],true,false]],"layout":{"icon-image":["concat",["get","network"],"_",["get","ref_length"]],"icon-rotation-alignment":"viewport","icon-size":1,"symbol-placement":["step",["zoom"],"point",7,"line",8,"line"],"symbol-spacing":200,"text-field":["to-string",["get","ref"]],"text-font":["Noto Sans Regular"],"text-rotation-alignment":"viewport","text-size":10}},{"id":"road_shield_us","type":"symbol","source":"openmaptiles","source-layer":"transportation_name","minzoom":9,"filter":["all",["<=",["get","ref_length"],6],["match",["geometry-type"],["LineString","MultiLineString"],true,false],["match",["get","network"],["us-highway","us-state"],true,false]],"layout":{"icon-image":["concat",["get","network"],"_",["get","ref_length"]],"icon-rotation-alignment":"viewport","icon-size":1,"symbol-placement":["step",["zoom"],"point",11,"line"],"symbol-spacing":200,"text-field":["to-string",["get","ref"]],"text-font":["Noto Sans Regular"],"text-rotation-alignment":"viewport","text-size":10}},{"id":"airport","type":"symbol","source":"openmaptiles","source-layer":"aerodrome_label","minzoom":10,"filter":["all",["has","iata"]],"layout":{"icon-image":"airport_11","icon-size":1,"text-anchor":"top","text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Regular"],"text-max-width":9,"text-offset":[0,0.6],"text-optional":true,"text-padding":2,"text-size":12},"paint":{"text-color":"#666","text-halo-blur":0.5,"text-halo-color":"#ffffff","text-halo-width":1}},{"id":"label_other","type":"symbol","source":"openmaptiles","source-layer":"place","minzoom":8,"filter":["match",["get","class"],["city","continent","country","state","town","village"],false,true],"layout":{"text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Italic"],"text-letter-spacing":0.1,"text-max-width":9,"text-size":["interpolate",["linear"],["zoom"],8,9,12,10],"text-transform":"uppercase"},"paint":{"text-color":"#333","text-halo-blur":1,"text-halo-color":"#fff","text-halo-width":1}},{"id":"label_village","type":"symbol","source":"openmaptiles","source-layer":"place","minzoom":9,"filter":["==",["get","class"],"village"],"layout":{"icon-allow-overlap":true,"icon-image":["step",["zoom"],"circle_11_black",10,""],"icon-optional":false,"icon-size":0.2,"text-anchor":"bottom","text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Regular"],"text-max-width":8,"text-size":["interpolate",["exponential",1.2],["zoom"],7,10,11,12]},"paint":{"text-color":"#000","text-halo-blur":1,"text-halo-color":"#fff","text-halo-width":1}},{"id":"label_town","type":"symbol","source":"openmaptiles","source-layer":"place","minzoom":6,"filter":["==",["get","class"],"town"],"layout":{"icon-allow-overlap":true,"icon-image":["step",["zoom"],"circle_11_black",10,""],"icon-optional":false,"icon-size":0.2,"text-anchor":"bottom","text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Regular"],"text-max-width":8,"text-size":["interpolate",["exponential",1.2],["zoom"],7,12,11,14]},"paint":{"text-color":"#000","text-halo-blur":1,"text-halo-color":"#fff","text-halo-width":1}},{"id":"label_state","type":"symbol","source":"openmaptiles","source-layer":"place","minzoom":5,"maxzoom":8,"filter":["==",["get","class"],"state"],"layout":{"text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Italic"],"text-letter-spacing":0.2,"text-max-width":9,"text-size":["interpolate",["linear"],["zoom"],5,10,8,14],"text-transform":"uppercase"},"paint":{"text-color":"#333","text-halo-blur":1,"text-halo-color":"#fff","text-halo-width":1}},{"id":"label_city","type":"symbol","source":"openmaptiles","source-layer":"place","minzoom":3,"filter":["all",["==",["get","class"],"city"],["!=",["get","capital"],2]],"layout":{"icon-allow-overlap":true,"icon-image":["step",["zoom"],"circle_11_black",9,""],"icon-optional":false,"icon-size":0.4,"text-anchor":"bottom","text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Regular"],"text-max-width":8,"text-offset":[0,-0.1],"text-size":["interpolate",["exponential",1.2],["zoom"],4,11,7,13,11,18]},"paint":{"text-color":"#000","text-halo-blur":1,"text-halo-color":"#fff","text-halo-width":1}},{"id":"label_city_capital","type":"symbol","source":"openmaptiles","source-layer":"place","minzoom":3,"filter":["all",["==",["get","class"],"city"],["==",["get","capital"],2]],"layout":{"icon-allow-overlap":true,"icon-image":["step",["zoom"],"circle_11_black",9,""],"icon-optional":false,"icon-size":0.5,"text-anchor":"bottom","text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Bold"],"text-max-width":8,"text-offset":[0,-0.2],"text-size":["interpolate",["exponential",1.2],["zoom"],4,12,7,14,11,20]},"paint":{"text-color":"#000","text-halo-blur":1,"text-halo-color":"#fff","text-halo-width":1}},{"id":"label_country_3","type":"symbol","source":"openmaptiles","source-layer":"place","minzoom":2,"maxzoom":9,"filter":["all",["==",["get","class"],"country"],[">=",["get","rank"],3]],"layout":{"text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Bold"],"text-max-width":6.25,"text-size":["interpolate",["linear"],["zoom"],3,9,7,17]},"paint":{"text-color":"#000","text-halo-blur":1,"text-halo-color":"#fff","text-halo-width":1}},{"id":"label_country_2","type":"symbol","source":"openmaptiles","source-layer":"place","maxzoom":9,"filter":["all",["==",["get","class"],"country"],["==",["get","rank"],2]],"layout":{"text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Bold"],"text-max-width":6.25,"text-size":["interpolate",["linear"],["zoom"],2,9,5,17]},"paint":{"text-color":"#000","text-halo-blur":1,"text-halo-color":"#fff","text-halo-width":1}},{"id":"label_country_1","type":"symbol","source":"openmaptiles","source-layer":"place","maxzoom":9,"filter":["all",["==",["get","class"],"country"],["==",["get","rank"],1]],"layout":{"text-field":["case",["has","name:nonlatin"],["concat",["get","name:latin"],"\n",["get","name:nonlatin"]],["coalesce",["get","name_en"],["get","name"]]],"text-font":["Noto Sans Bold"],"text-max-width":6.25,"text-size":["interpolate",["linear"],["zoom"],1,9,4,17]},"paint":{"text-color":"#000","text-halo-blur":1,"text-halo-color":"#fff","text-halo-width":1}}]};
+    const satelliteStyle={version:8,sources:{satellite:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'}},layers:[{id:'satellite',type:'raster',source:'satellite'}]};
+    const hybridStyle={version:8,sources:{satellite:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'},labels:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256,attribution:'Labels © Esri'}},layers:[{id:'satellite',type:'raster',source:'satellite'},{id:'labels',type:'raster',source:'labels'}]};
+    const isLocalAndroid=/^(content:|file:)$/.test(location.protocol);
+    const generalStyle=streetStyle;
+    const map=new maplibregl.Map({container:'map',style:generalStyle,center:[127.1375,37.6040],zoom:12.5,maxZoom:20,attributionControl:true});
+    map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
+    class MapStyleControl{
+      onAdd(mapInstance){this.map=mapInstance;this.container=document.createElement('div');this.container.className='maplibregl-ctrl map-style-control';[['일반지도',generalStyle],['위성지도',satelliteStyle]].forEach(([label,style],index)=>{const button=document.createElement('button');button.type='button';button.textContent=label;if(index===0)button.classList.add('active');button.addEventListener('click',()=>{this.container.querySelectorAll('button').forEach(b=>b.classList.remove('active'));button.classList.add('active');mapInstance.setStyle(style)});this.container.appendChild(button)});return this.container}
+      onRemove(){this.container.remove();this.map=null}
     }
+    map.addControl(new MapStyleControl(),'bottom-left');
+    const markers = new Map();
+    let selectedApartment = null;
 
-    async function sendChat() {
-      const input = document.getElementById("chatInput");
-      const question = input.value.trim();
-      if (!question) return;
+    apartments.forEach(apt=>{ apt.facilities = apt.facilities || []; apt.buildings = embeddedDongLabels[apt.id] || []; });
 
-      addMessage("user", question);
-
-      const userPrompt = `
-[상단 최초 질문]
-${state.mainQuery}
-
-[상단 AI 해석 결과]
-${state.mainAnswer}
-
-[현재 상황 요약]
-${JSON.stringify(state.facts, null, 2)}
-
-[현재까지 하단 대화]
-${state.chatHistory.map(m => `${m.role}: ${m.content}`).join("\n")}
-
-[사용자 최신 질문]
-${question}
-
-위 맥락을 모두 반영하여 답변하세요.
-      `.trim();
-
-      const answer = await callFireLawApi(userPrompt);
-
-      state.chatHistory.push({ role: "user", content: question });
-      state.chatHistory.push({ role: "assistant", content: answer });
-
-      mergeFacts(extractFacts(question));
-      addMessage("ai", answer);
-      input.value = "";
-      updateSummary();
-    }
-
-    async function quickAsk(text) {
-      document.getElementById("chatInput").value = text;
-      await sendChat();
-    }
-
-    async function callFireLawApi(userPrompt) {
-      try {
-        setLoading(true);
-        const response = await fetch("/.netlify/functions/firelaw", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            systemPrompt: FIRELAW_SYSTEM_PROMPT,
-            userPrompt,
-            context: {
-              mainQuery: state.mainQuery,
-              mainAnswer: state.mainAnswer,
-              mode: state.mode,
-              riskLevel: state.riskLevel,
-              facts: state.facts,
-              chatHistory: state.chatHistory.slice(-10)
-            }
-          })
+    async function loadFacilities(){
+      try{
+        const data = embeddedFacilities;
+        const byId = new Map(apartments.map(a=>[a.id,a]));
+        let siameseCount=0, receiverCount=0, aptWithData=0;
+        Object.keys(data).forEach(aptId=>{
+          const apt = byId.get(aptId); if(!apt) return;
+          const rec = data[aptId];
+          const items = [];
+          (rec['연결송수관']||[]).forEach((f,i)=>{items.push({id:`${aptId}-S${i+1}`,type:'siamese',label:f.label||`연결송수관 ${i+1}`,lng:f.lng,lat:f.lat,source:f.source||'현장 실측'});siameseCount++;});
+          (rec['수신반']||[]).forEach((f,i)=>{items.push({id:`${aptId}-R${i+1}`,type:'receiver',label:f.label||`수신반 ${i+1}`,lng:f.lng,lat:f.lat,source:f.source||'현장 실측'});receiverCount++;});
+          apt.facilities = items;
+          if(items.length) aptWithData++;
         });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "API 호출 실패");
-        }
-
-        return data.answer;
-      } catch (error) {
-        console.error(error);
-        return `[오류 안내]\nAI API 연결에 실패했습니다.\n\n[확인할 사항]\n1) Netlify 환경변수 OPENAI_API_KEY 설정 여부\n2) netlify/functions/firelaw.js 파일 배포 여부\n3) OpenAI API 결제·한도 상태\n4) 브라우저 개발자도구 Console 오류\n\n[오류 내용]\n${error.message}`;
-      } finally {
-        setLoading(false);
+        return {siameseCount, receiverCount, aptWithData};
+      }catch(err){
+        console.warn('HTML 내부 시설 데이터 적용 실패 — 시설 데이터 없이 지도를 표시합니다.', err);
+        return {siameseCount:0, receiverCount:0, aptWithData:0};
       }
     }
 
-    function makeUserPrompt(query) {
-      return `
-[질문 또는 상황 설명]
-${query}
-
-[답변 모드]
-${state.mode}
-
-[긴급도]
-${state.riskLevel}
-
-[요청]
-위 질문에 대해 FireLaw AI 프롬프트의 출력 형식을 반드시 지켜 답변하세요.
-      `.trim();
-    }
-
-    function extractFacts(text) {
-      const facts = {};
-
-      if (/구조일지|구급일지|구조활동일지|구급활동일지|정보공개|개인정보|민감정보|제3자|가족|대리인|위임장/.test(text)) {
-        facts.topic = "정보공개·개인정보·구조/구급활동일지";
-      } else if (/소화전|불법주차|주정차|과태료/.test(text)) {
-        facts.topic = "소화전 주변 불법 주정차";
-      } else if (/화재|연기|요구조자|붕괴|수난|교통사고|위험물|구조/.test(text)) {
-        facts.topic = "현장 대응·상황보고";
-      } else if (/공문|보고|계획|훈련|협조/.test(text)) {
-        facts.topic = "공문·보고서 작성";
-      } else {
-        facts.topic = "소방 실무 질의";
-      }
-
-      const area = text.match(/(\d{2,5})\s?(㎡|m2|제곱미터)/i);
-      if (area) facts.area = `${area[1]}㎡`;
-
-      const floor = text.match(/(지하\s?\d+층|\d+층|[일이삼사오육칠팔구십]+층)/);
-      if (floor) facts.floor = floor[0].replace(/\s/g, "");
-
-      const uses = ["도서관", "공장", "창고", "다세대주택", "공동주택", "아파트", "근린생활시설", "판매시설", "노유자시설", "의료시설", "학교", "지하역사"];
-      const found = uses.find(u => text.includes(u));
-      if (found) facts.buildingUse = found;
-
-      return facts;
-    }
-
-    function mergeFacts(newFacts) {
-      state.facts = { ...state.facts, ...newFacts };
-    }
-
-    function updateSummary() {
-      document.getElementById("sumTopic").textContent = state.facts.topic || "미입력";
-
-      const factText = [
-        state.facts.buildingUse ? `용도 ${state.facts.buildingUse}` : "",
-        state.facts.floor ? `층수 ${state.facts.floor}` : "",
-        state.facts.area ? `면적 ${state.facts.area}` : "",
-      ].filter(Boolean).join(" / ");
-
-      document.getElementById("sumFacts").textContent = factText || "미입력";
-      document.getElementById("sumMode").textContent = `${state.mode} / ${state.riskLevel}`;
-      document.getElementById("sumCount").textContent = `${Math.floor(state.chatHistory.length / 2)}회`;
-    }
-
-    function addMessage(role, content) {
-      const box = document.getElementById("chatBox");
-      const div = document.createElement("div");
-      div.className = `msg ${role}`;
-      div.textContent = content;
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
-    }
-
-    function setLoading(isLoading) {
-      document.getElementById("status").textContent = isLoading ? "AI 답변 생성 중..." : "대기 중";
-      document.querySelectorAll("button").forEach(btn => {
-        btn.disabled = isLoading;
+    function renderMap(){
+      markers.forEach(marker=>marker.remove());markers.clear();
+      apartments.filter(apt=>Number.isFinite(apt.lat)&&Number.isFinite(apt.lng)).forEach(apt=>{
+        apt.buildings.forEach((building,index)=>{
+          const label=document.createElement('div');label.className=`dong-marker ${map.getZoom()>=15.5?'':'hidden'}`;label.textContent=building.label;label.title=`${apt.name} · ${building.label}`;
+          const buildingMarker=new maplibregl.Marker({element:label,anchor:'center'}).setLngLat([building.lng,building.lat]).addTo(map);
+          markers.set(`${apt.id}-D${index+1}`,buildingMarker);
+        });
+        apt.facilities.forEach(facility=>{
+          const dot=document.createElement('button');dot.type='button';dot.className=`facility-marker ${facility.type} ${selectedApartment===apt.id?'':'hidden'}`;dot.title=`${apt.name} · ${facility.label}`;dot.setAttribute('aria-label',dot.title);
+          dot.addEventListener('click',e=>{e.stopPropagation();showFacility(apt,facility)});
+          const facilityMarker=new maplibregl.Marker({element:dot,anchor:'center'}).setLngLat([facility.lng,facility.lat]).addTo(map);
+          markers.set(facility.id,facilityMarker);
+        });
       });
     }
 
-    function copyContext() {
-      const text = `
-[상단 질문]
-${state.mainQuery}
+    function updateDongVisibility(){
+      const visible=map.getZoom()>=15.5;
+      document.querySelectorAll('.dong-marker').forEach(label=>label.classList.toggle('hidden',!visible));
+    }
+    map.on('zoom',updateDongVisibility);
 
-[상단 답변]
-${state.mainAnswer}
-
-[현재 요약]
-${JSON.stringify(state.facts, null, 2)}
-      `.trim();
-
-      navigator.clipboard.writeText(text).then(() => alert("현재 맥락이 복사되었습니다."));
+    function renderList(query=''){
+      const q=query.trim().toLowerCase();
+      const filtered=apartments.filter(a=>(a.name+' '+a.address).toLowerCase().includes(q));
+      document.getElementById('count').textContent=`${filtered.length}개소`;
+      document.getElementById('aptList').innerHTML=filtered.map(a=>`<button class="apt-card ${selectedApartment===a.id?'active':''}" data-id="${a.id}"><div class="apt-name">${a.no}. ${a.name}</div><div class="apt-address">${a.address}</div><div class="facility-count">${a.grade} · ${a.blocks}개 동 · ${a.floors}${a.buildings.length?` · 동 위치 ${a.buildings.length}개`:' · 동 위치 미확인'}${a.facilities.length?` · 시설 ${a.facilities.length}개`:''}</div></button>`).join('') || '<p style="font-size:.82rem;color:#627086;padding:8px">검색 결과가 없습니다.</p>';
+      document.querySelectorAll('.apt-card').forEach(el=>el.addEventListener('click',()=>selectApartment(el.dataset.id)));
     }
 
-    function downloadTxt() {
-      const text = `
-FireLaw AI 대화 기록
-
-[상단 질문]
-${state.mainQuery}
-
-[상단 답변]
-${state.mainAnswer}
-
-[대화]
-${state.chatHistory.map(m => `${m.role}: ${m.content}`).join("\n\n")}
-      `.trim();
-
-      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "firelaw_ai_chat_log.txt";
-      a.click();
-      URL.revokeObjectURL(url);
+    function selectApartment(id){
+      selectedApartment=id; const apt=apartments.find(a=>a.id===id); if(!apt)return;
+      renderMap(); renderList(document.getElementById('searchInput').value);
+      if(Number.isFinite(apt.lat)&&Number.isFinite(apt.lng)){
+        if(apt.facilities.length || apt.buildings.length){
+          const points=[...apt.facilities,...apt.buildings];
+          const bounds=points.reduce((box,item)=>box.extend([item.lng,item.lat]),new maplibregl.LngLatBounds([apt.lng,apt.lat],[apt.lng,apt.lat]));
+          map.fitBounds(bounds,{padding:{top:70,bottom:90,left:70,right:70},maxZoom:18,duration:500});
+        }else{
+          map.easeTo({center:[apt.lng,apt.lat],zoom:18,duration:500});
+        }
+      }
+      showApartment(apt);
     }
 
-    function resetAll() {
-      if (!confirm("전체 초기화할까요?")) return;
-      state.mainQuery = "";
-      state.mainAnswer = "";
-      state.mode = "법령 해석";
-      state.riskLevel = "일반";
-      state.chatHistory = [];
-      state.facts = {};
-      document.getElementById("mainQuery").value = "";
-      document.getElementById("chatInput").value = "";
-      document.getElementById("mode").value = "법령 해석";
-      document.getElementById("riskLevel").value = "일반";
-      document.getElementById("chatBox").innerHTML = '<div class="msg ai">초기화되었습니다. 상단에 질문을 입력하세요.</div>';
-      updateSummary();
+    function showApartment(apt){
+      const naverUrl=`https://map.naver.com/p/entry/place/${apt.naverPlaceId}`;
+      setDetail('공동주택',apt.name,apt.address,[['도로명주소',apt.roadAddress],['소방안전관리 등급',apt.grade],['동수',`${apt.blocks}개 동`],['공식 동 위치',apt.buildings.length?`${apt.buildings.length}개 확인`:'원본 GIS에 동 번호 없음'],['층수',apt.floors],['지도 위치','네이버지도 검색 결과 확인'],['네이버지도',`<a href="${naverUrl}" target="_blank" rel="noopener noreferrer">네이버지도에서 보기 ↗</a>`]]);
     }
 
-    updateSummary();
+    function showFacility(apt,facility){
+      const type=facility.type==='receiver'?'수신반':'연결송수관';
+      setDetail(type,facility.label,apt.name,[['시설 구분',type],['단지 주소',apt.address],['위치 근거',facility.source],['표시 안내','엑셀 시설좌표입력 시트의 GPS 실측 좌표']]);
+    }
+
+    function setDetail(type,title,subtitle,items){
+      const color=type==='수신반'?'#1677d2':type==='연결송수관'?'#e33b42':'#203a60';
+      const t=document.getElementById('detailType');t.textContent=type;t.style.color=color;
+      document.getElementById('detailTitle').textContent=title;document.getElementById('detailSubtitle').textContent=subtitle;
+      document.getElementById('detailGrid').innerHTML=items.map(([k,v])=>`<div class="info"><b>${k}</b><span>${v}</span></div>`).join('');
+      document.getElementById('detail').classList.add('open');
+    }
+
+    document.getElementById('closeDetail').addEventListener('click',()=>document.getElementById('detail').classList.remove('open'));
+    document.getElementById('searchInput').addEventListener('input',e=>{renderList(e.target.value);document.getElementById('clearBtn').style.display=e.target.value?'block':'none'});
+    document.getElementById('clearBtn').addEventListener('click',()=>{const i=document.getElementById('searchInput');i.value='';i.focus();renderList();document.getElementById('clearBtn').style.display='none'});
+    document.getElementById('locateBtn').addEventListener('click',()=>{
+      if(!navigator.geolocation){alert('현재 위치 기능을 사용할 수 없습니다.');return;}
+      navigator.geolocation.getCurrentPosition(p=>{map.easeTo({center:[p.coords.longitude,p.coords.latitude],zoom:17,duration:500});const dot=document.createElement('div');dot.title='현재 위치';dot.style.cssText='width:18px;height:18px;border-radius:50%;background:#2d8cff;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35)';new maplibregl.Marker({element:dot}).setLngLat([p.coords.longitude,p.coords.latitude]).addTo(map);},()=>alert('위치 권한을 허용해 주세요.'));
+    });
+
+    (async function init(){
+      const stats = await loadFacilities();
+      renderMap();
+      renderList();
+      const notice = document.getElementById('notice');
+      if(notice){
+        notice.textContent = stats.aptWithData
+          ? `${stats.aptWithData}/${apartments.length}개 단지 시설 데이터 반영 · 연결송수관 ${stats.siameseCount}개 · 수신반 ${stats.receiverCount}개`
+          : '시설 좌표 데이터가 아직 없습니다';
+        if(isLocalAndroid) notice.textContent += ' · 일반지도는 http:// 주소로 열어야 정상 표시됩니다';
+      }
+      const draftBadge = document.querySelector('.draft');
+      if(draftBadge) draftBadge.textContent = `${stats.aptWithData}/${apartments.length}개 단지 반영`;
+    })();
   </script>
 </body>
 </html>
